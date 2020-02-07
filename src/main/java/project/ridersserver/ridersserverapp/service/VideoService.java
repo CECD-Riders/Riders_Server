@@ -1,5 +1,6 @@
 package project.ridersserver.ridersserverapp.service;
 
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 
@@ -19,6 +20,18 @@ public class VideoService {
 	private VideoRepository videoRepository;
 
 	@Transactional
+	public VideoEntity loadVideoByVideoname(String videoName){
+		Optional<VideoEntity> videoEntityWrapper = videoRepository.findByName(videoName);
+		if(!videoEntityWrapper.isPresent()) {
+			System.out.println("비디오를 찾을수 없습니다!");
+			return null;
+		}
+		else{
+			return videoEntityWrapper.get();
+		}
+	}
+
+	@Transactional
 	public Long SaveSingleVideo(VideoDto videoDto) {
 
         if(videoRepository.findByName(videoDto.getName()).isPresent())
@@ -34,20 +47,20 @@ public class VideoService {
         	videoRepository.deleteByName(videoDto.getName());
 	}
 	
-	@Transactional
-	public int VideoOverlapCheck(String videoName) {
-		Optional<VideoEntity> videoEntity = videoRepository.findByName(videoName);
-		if(videoEntity.isPresent())
-			return 1;
-		else
-			return -1;
-	}
+//	@Transactional
+//	public int VideoOverlapCheck(String videoName) {
+//		Optional<VideoEntity> videoEntity = videoRepository.findByName(videoName);
+//		if(videoEntity.isPresent())
+//			return 1;
+//		else
+//			return -1;
+//	}
 
 	@Transactional
 	public List<String> GetLatestVideoName(){
 		List<VideoEntity> allOrderByCreateTimeAt = videoRepository.findAllOrderByCreateTimeAt();
 		List<String> fourLatestVideoName = new ArrayList<String>();
-		for(int i = 0; i< 3;i++) {
+		for(int i = 0; i< allOrderByCreateTimeAt.size();i++) {
 			System.out.println(allOrderByCreateTimeAt.get(i).getName());
 			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).getName());
 		}
@@ -59,7 +72,7 @@ public class VideoService {
 	public List<String> GetMostLikeVideoName(){
 		List<VideoEntity> allOrderByLike = videoRepository.findAllOrderByLike();
 		List<String> fourMostLikeVideoName = new ArrayList<String>();
-		for(int i = 0; i< 3;i++) {
+		for(int i = 0; i< allOrderByLike.size();i++) {
 			System.out.println(allOrderByLike.get(i).getName());
 			fourMostLikeVideoName.add(allOrderByLike.get(i).getName());
 		}

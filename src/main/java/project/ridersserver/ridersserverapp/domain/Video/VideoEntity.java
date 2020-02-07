@@ -27,16 +27,20 @@ public class VideoEntity {
 	@Column(name = "videolike",nullable = false)
     private Long like;
 
+	@Column(name = "videoView",nullable = false)//조회수
+	private Long view;
+
 	@CreatedDate
 	@Column(name = "createTimeAt",updatable = false)
 	private LocalDateTime createTimeAt;
 
 
 	@Builder
-	public VideoEntity(Long id, String name, Long like, LocalDateTime createTimeAt) {
+	public VideoEntity(Long id, String name, Long like, Long view, LocalDateTime createTimeAt) {
 		this.id = id;
 		this.name = name;
 		this.like = like;
+		this.view = view;
 		this.createTimeAt = createTimeAt;
 	}
 }

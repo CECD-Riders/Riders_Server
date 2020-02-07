@@ -17,4 +17,14 @@ public class ComponentLoadController {
         return "/headers";
     }
 
+    @RequestMapping("/admin/leftSidebar.html")
+    public String loadAdminSidebar() {
+        return "/leftSidebar";
+    }
+
+    @RequestMapping("/admin/headers.html")
+    public String loadAdminHeader() {
+        return "/headers";
+    }
+
 }
