@@ -6,13 +6,19 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import project.ridersserver.ridersserverapp.FTP.FTPHostInfo;
 import project.ridersserver.ridersserverapp.FTP.FTPUploader;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
+import project.ridersserver.ridersserverapp.domain.Video.VideoLikeEntity;
+import project.ridersserver.ridersserverapp.domain.Video.VideoLikeRepository;
 import project.ridersserver.ridersserverapp.dto.VideoDto;
+import project.ridersserver.ridersserverapp.dto.VideoLikeDto;
+import project.ridersserver.ridersserverapp.service.VideoLikeService;
 import project.ridersserver.ridersserverapp.service.VideoService;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
 import java.time.LocalDateTime;
 
 @Controller
@@ -21,11 +27,61 @@ public class VideoController {
 
     private VideoService videoService;
 
+    private VideoLikeService videoLikeService;
+
     private FTPHostInfo ftpHostInfo;
 
+    //좋아요 처리
+    @RequestMapping("/member/vidoLike")
+    @ResponseBody
+    public int videoLikeHandler(HttpServletRequest request, Model model){
+        String recommendMsg = request.getParameter("recommendMsg");
+        String memberName = request.getParameter("memberName");
+        String videoName = request.getParameter("videoName");
+        Long videoLike = Long.parseLong(request.getParameter("like"));
+        System.out.println(recommendMsg);
+        System.out.println(memberName);
+        System.out.println(videoName);
+
+        if(recommendMsg.equals("추천")){//-> 추천관계 저장 + videoName기준 video 테이블에 접근해서 like 1증가
+            VideoLikeDto videoLikeDto = new VideoLikeDto();
+            videoLikeDto.setMemberName(memberName);
+            videoLikeDto.setVideoName(videoName);
+
+            VideoDto videoDto = new VideoDto();
+            videoDto.setName(videoName);
+            videoDto.setLike(videoLike);
+            videoService.UpSingleVideoLike(videoDto);
+
+            if(videoLikeService.saveVideoLike(videoLikeDto) == -1){//뭔가 실패한것
+                return -1;
+            }else
+                return 1;
+        }else{//->추천관계 삭제 + videoName기준 video 테이블에 접근해서 like 1 감소
+            VideoLikeDto videoLikeDto = new VideoLikeDto();
+            videoLikeDto.setMemberName(memberName);
+            videoLikeDto.setVideoName(videoName);
+
+            VideoDto videoDto = new VideoDto();
+            videoDto.setName(videoName);
+            videoDto.setLike(videoLike);
+            videoService.DownSingleVideoLike(videoDto);
+
+            if(videoLikeService.deleteVideoLike(videoLikeDto) == -1){
+                return -1;
+            }else
+                return 1;
+        }
+    }
+
+
     //영상 시청
-    @RequestMapping("/watch")
-    public String watchVideo(HttpServletRequest request, Model model) {
+    @RequestMapping("/member/watch")
+    public String watchVideo(HttpServletRequest request, Model model, Principal principal) {
+        String memberName;
+        memberName = principal.getName();
+        System.out.println(memberName);
+
         String videoName = request.getParameter("videoName");
         if(videoName == null){
             String useDate = request.getParameter("year");
@@ -54,6 +110,15 @@ public class VideoController {
             model.addAttribute("view",videoEntity.getView());
             model.addAttribute("like",videoEntity.getLike());
             model.addAttribute("day",videoEntity.getCreateTimeAt());
+            model.addAttribute("member",memberName);
+
+            //영상이 있을 시에 현 접속자와 영상 사이의 추천관계 판단
+            VideoLikeEntity videoLikeEntity = videoLikeService.findByMemberNameAndVideoName(memberName, videoName);
+            if(videoLikeEntity !=null) { //추천관계가 있음(이미 추천을 눌렀음)
+                model.addAttribute("recommendationMsg","해지");
+            }else {
+                model.addAttribute("recommendationMsg","추천");
+            }
             return "/watchVideo";
         }
         else
@@ -80,7 +145,7 @@ public class VideoController {
     @PostMapping("/admin/videoUpload")
     public String videoUploadAction(HttpServletRequest request ,Model model) {
         String localPath = request.getParameter("path");                    //로컬 경로(전송을 위해 필요한 경로)
-        String HostfileName = request.getParameter("HostfileName");        //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
+        String HostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
         localPath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
         System.out.println(localPath);
         System.out.println(HostfileName);
@@ -95,7 +160,6 @@ public class VideoController {
             //디비 -> FTP
             id = videoService.SaveSingleVideo(videoDto);
             if (id == -1) {
-//                model.addAttribute("succesMsg", "영상전송 실패! 중복된 영상이 있습니다.");
                 return "redirect:/admin/videoUpload?msg=overlap";
             } else {
                 ftpUploader = new FTPUploader(ftpHostInfo.getHostIP(), ftpHostInfo.getPort(), ftpHostInfo.getID(), ftpHostInfo.getPW());
@@ -104,17 +168,9 @@ public class VideoController {
             }
         } catch (Exception e) {
             videoService.DeleteSingleVideo(videoDto);
-//            model.addAttribute("succesMsg", "영상전송 실패! 서버와의 연결을 확인해 주세요.");
             return "redirect:/admin/videoUpload?msg=serverError";
         }
         return "redirect:/admin/videoUpload?msg=succes";
-
-//        if (id != -1) {
-//            model.addAttribute("succesMsg", "영상전송 성공!");
-//            return "redirect:videoUpload?msg=succes";
-//        }
-
-
     }
 
 }

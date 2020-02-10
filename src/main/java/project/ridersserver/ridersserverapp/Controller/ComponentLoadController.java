@@ -27,4 +27,14 @@ public class ComponentLoadController {
         return "/headers";
     }
 
+    @RequestMapping("/member/leftSidebar.html")
+    public String loadMemberSidebar() {
+        return "/leftSidebar";
+    }
+
+    @RequestMapping("/member/headers.html")
+    public String loadMemberHeader() {
+        return "/headers";
+    }
+
 }

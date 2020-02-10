@@ -46,22 +46,22 @@ public class VideoService {
         if(videoRepository.findByName(videoDto.getName()).isPresent())
         	videoRepository.deleteByName(videoDto.getName());
 	}
-	
-//	@Transactional
-//	public int VideoOverlapCheck(String videoName) {
-//		Optional<VideoEntity> videoEntity = videoRepository.findByName(videoName);
-//		if(videoEntity.isPresent())
-//			return 1;
-//		else
-//			return -1;
-//	}
+
+	@Transactional
+	public int UpSingleVideoLike(VideoDto videoDto){
+		return videoRepository.updateSingleVideoLike(videoDto.getLike() + 1,videoDto.getName());
+	}
+
+	@Transactional
+	public int DownSingleVideoLike(VideoDto videoDto){
+		return videoRepository.updateSingleVideoLike(videoDto.getLike() - 1,videoDto.getName());
+	}
 
 	@Transactional
 	public List<String> GetLatestVideoName(){
 		List<VideoEntity> allOrderByCreateTimeAt = videoRepository.findAllOrderByCreateTimeAt();
 		List<String> fourLatestVideoName = new ArrayList<String>();
 		for(int i = 0; i< allOrderByCreateTimeAt.size();i++) {
-			System.out.println(allOrderByCreateTimeAt.get(i).getName());
 			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).getName());
 		}
 
