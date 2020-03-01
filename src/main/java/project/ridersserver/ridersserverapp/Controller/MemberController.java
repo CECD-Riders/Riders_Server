@@ -39,6 +39,7 @@ public class MemberController {
     public int idCheck(HttpServletRequest request) {
         String memberId = request.getParameter("memberId");
         Long isPresent = memberService.emailOverlapCheck(memberId);
+        System.out.println("nothing");
         if(isPresent == -1)
             return 1;
         else
