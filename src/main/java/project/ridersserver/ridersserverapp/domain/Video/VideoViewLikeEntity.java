@@ -11,8 +11,8 @@ import javax.persistence.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
-@Table(name = "videoLike")
-public class VideoLikeEntity {
+@Table(name = "videoViewLike")
+public class VideoViewLikeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "VIDEOLIKE_SEQ_GENERATOR")
@@ -24,10 +24,17 @@ public class VideoLikeEntity {
     @Column(name = "videoname", length = 100, nullable = false)
     private String videoName;
 
+    @Column(name = "islike", nullable = false)
+    private boolean isLike;
+
+
+
     @Builder
-    public VideoLikeEntity(Long id, String memberName, String videoName){
+    public VideoViewLikeEntity(Long id, String memberName, String videoName, boolean isLike){
         this.id = id;
         this.memberName = memberName;
         this.videoName = videoName;
+        this.isLike = isLike;
     }
+
 }

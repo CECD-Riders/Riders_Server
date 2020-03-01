@@ -15,6 +15,10 @@ public interface VideoRepository extends JpaRepository<VideoEntity, Long>{
 	Optional<VideoEntity> deleteByName(String videoName);
 
 	@Modifying
+	@Query(value = "UPDATE VideoEntity v set v.view = :view where v.name = :videoName")
+	int updateSingleVideoView(@Param("view") Long view, @Param("videoName") String videoName);
+
+	@Modifying
 	@Query(value = "UPDATE VideoEntity v set v.like = :like where v.name = :videoName")
 	int updateSingleVideoLike(@Param("like") Long like, @Param("videoName") String videoName);
 

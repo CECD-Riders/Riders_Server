@@ -48,6 +48,11 @@ public class VideoService {
 	}
 
 	@Transactional
+	public int UpSingleVideoView(VideoDto videoDto){
+		return videoRepository.updateSingleVideoView(videoDto.getView() + 1,videoDto.getName());
+	}
+
+	@Transactional
 	public int UpSingleVideoLike(VideoDto videoDto){
 		return videoRepository.updateSingleVideoLike(videoDto.getLike() + 1,videoDto.getName());
 	}
