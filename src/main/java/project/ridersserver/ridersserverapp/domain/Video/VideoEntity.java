@@ -34,14 +34,43 @@ public class VideoEntity {
 	@Column(name = "createTimeAt",updatable = false)
 	private LocalDateTime createTimeAt;
 
+	@Column(name = "away", nullable = true, length = 4000)
+	private String away;
+
+	@Column(name = "home", nullable = true, length = 4000)
+	private String home;
+
+	@Column(name = "two", nullable = true, length = 4000)
+	private String two;
+
+	@Column(name = "three", nullable = true, length = 4000)
+	private String three;
+
+	@Column(name = "dunk", nullable = true, length = 4000)
+	private String dunk;
+
+	@Column(name = "block", nullable = true, length = 4000)
+	private String block;
+
+
+
+
+
 
 	@Builder
-	public VideoEntity(Long id, String name, Long like, Long view, LocalDateTime createTimeAt) {
+	public VideoEntity(Long id, String name, Long like, Long view, LocalDateTime createTimeAt,
+					   String away, String home, String two, String three, String dunk, String block) {
 		this.id = id;
 		this.name = name;
 		this.like = like;
 		this.view = view;
 		this.createTimeAt = createTimeAt;
+		this.away = away;
+		this.home = home;
+		this.two = two;
+		this.three = three;
+		this.dunk = dunk;
+		this.block = block;
 	}
 }
 

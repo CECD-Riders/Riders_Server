@@ -1,6 +1,8 @@
 package project.ridersserver.ridersserverapp.Controller;
 
 import lombok.AllArgsConstructor;
+import net.sourceforge.tess4j.TesseractException;
+import org.bytedeco.javacv.FrameGrabber;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import project.ridersserver.ridersserverapp.FTP.FTPHostInfo;
 import project.ridersserver.ridersserverapp.FTP.FTPUploader;
+import project.ridersserver.ridersserverapp.VideoConverter.VideoConverter;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
 import project.ridersserver.ridersserverapp.domain.Video.VideoViewLikeEntity;
 import project.ridersserver.ridersserverapp.dto.VideoDto;
@@ -19,6 +22,7 @@ import project.ridersserver.ridersserverapp.service.VideoService;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @Controller
 @AllArgsConstructor
@@ -29,6 +33,8 @@ public class VideoController {
     private VideoViewLikeService videoViewLikeService;
 
     private FTPHostInfo ftpHostInfo;
+
+    private VideoConverter videoConverter;
 
     //좋아요 처리
     @RequestMapping("/member/vidoLike")
@@ -84,13 +90,41 @@ public class VideoController {
     //비디오 마크 처리
     @GetMapping("/member/videoMark")
     @ResponseBody
-    public String videoMarkHandler(HttpServletRequest request)
-    {
+    public String videoMarkHandler(HttpServletRequest request) {
         System.out.println(request.getParameter("videoName"));
         System.out.println(request.getParameter("eventName"));
+        String videoName = request.getParameter("videoName");
+        String eventName = request.getParameter("eventName");
+
+        VideoEntity videoEntity = videoService.loadVideoByVideoname(videoName);
+        String eventStr = "";
+        if(eventName.equals("홈"))
+            eventStr = videoEntity.getHome();
+        else if(eventName.equals("어웨이"))
+            eventStr = videoEntity.getAway();
+        else if(eventName.equals("덩크"))
+            eventStr = videoEntity.getDunk();
+        else if(eventName.equals("3점슛"))
+            eventStr = videoEntity.getThree();
+        else if(eventName.equals("2점슛"))
+            eventStr = videoEntity.getTwo();
+        else if(eventName.equals("블락"))
+            eventStr = videoEntity.getBlock();
+        else
+            System.out.println("nothing");
+
+        String[] timeSegments = eventStr.split("-");
+        String markStr = "[";
+        for(int i = 0 ; i < timeSegments.length;i++)
+        {
+            String parsedEventTime = "{time: " + timeSegments[i] + "},";
+            markStr = markStr + parsedEventTime;
+        }
+        markStr = markStr + "]";
+        System.out.println(markStr);
 
         //ocr로 event별 시간대가 db에 저장되어 있다면 (videoName, eventName)으로 가져와서 markStr에 저장하면 끝
-        String markStr = "[{time: 90.5}, {time: 150}, {time: 250}, {time: 370},]";
+//        String markStr = "[{time: 90.5}, {time: 150}, {time: 250}, {time: 370},]";
 
         return markStr;
     }
@@ -187,18 +221,67 @@ public class VideoController {
 
     // 영상전송 수행
     @PostMapping("/admin/videoUpload")
-    public String videoUploadAction(HttpServletRequest request ,Model model) {
+    public String videoUploadAction(HttpServletRequest request ,Model model) throws TesseractException, FrameGrabber.Exception {
         String localPath = request.getParameter("path");                    //로컬 경로(전송을 위해 필요한 경로)
         String HostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
         localPath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
         System.out.println(localPath);
         System.out.println(HostfileName);
+
+        //1. 영상의 이벤트 정보를 디비에 저장할 스트링 생성
+        String awayTime = "", homeTime = "", twoTime = "", threeTime = "", dunkTime = "", blockTime = "";
+        videoConverter.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata");
+        videoConverter.setVideoFilePath(localPath);
+        videoConverter.setFrameRate(30);
+        videoConverter.setImageDomain(10, 10, 300, 45);
+        ArrayList<String> convertVideoToString = videoConverter.ConvertVideoToString();
+        for(int i = 0 ; i < convertVideoToString.size();i++)
+        {
+//            System.out.println(convertVideoToString.get(i));
+
+            String[] splitedStr = convertVideoToString.get(i).split("-");
+            String timeInfo = splitedStr[0];
+            String teamInfo = splitedStr[1];
+            String actionInfo = splitedStr[2];
+            System.out.println(timeInfo + "/" + teamInfo + "/" + actionInfo);
+            if(teamInfo.equals("Away"))
+                awayTime = awayTime + timeInfo + "-";
+            else
+                homeTime = homeTime + timeInfo + "-";
+
+            if(actionInfo.equals("2Point"))
+                twoTime = twoTime + timeInfo + "-";
+            else if(actionInfo.equals("3Point"))
+                threeTime = threeTime + timeInfo + "-";
+            else if(actionInfo.equals("Dunk"))
+                dunkTime = dunkTime + timeInfo + "-";
+            else if(actionInfo.equals("Block"))
+                blockTime = blockTime + timeInfo + "-";
+            else
+                System.out.println("nothing");
+        }
+        System.out.println("======================================================");
+        System.out.println(homeTime);
+        System.out.println(awayTime);
+        System.out.println(twoTime);
+        System.out.println(threeTime);
+        System.out.println(blockTime);
+        System.out.println(dunkTime);
+
+
+        //2. 영상전송
         Long id;
         VideoDto videoDto = new VideoDto();
         videoDto.setName(HostfileName);
         videoDto.setLike(new Long(0));
         videoDto.setView(new Long(0));
         videoDto.setCreateTimeAt(LocalDateTime.now());
+        videoDto.setAway(awayTime);
+        videoDto.setHome(homeTime);
+        videoDto.setTwo(twoTime);
+        videoDto.setThree(threeTime);
+        videoDto.setDunk(dunkTime);
+        videoDto.setBlock(blockTime);
         FTPUploader ftpUploader;
         try {
             //디비 -> FTP

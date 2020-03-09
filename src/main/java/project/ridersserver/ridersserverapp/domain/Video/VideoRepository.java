@@ -30,6 +30,4 @@ public interface VideoRepository extends JpaRepository<VideoEntity, Long>{
 	@Query(value = "SELECT v FROM VideoEntity v ORDER BY v.like DESC")
 	List<VideoEntity> findAllOrderByLike();
 
-
-
 }
