@@ -20,14 +20,14 @@ public class VideoService {
 	private VideoRepository videoRepository;
 
 	@Transactional
-	public VideoEntity loadVideoByVideoname(String videoName){
+	public VideoDto loadVideoByVideoname(String videoName){
 		Optional<VideoEntity> videoEntityWrapper = videoRepository.findByName(videoName);
 		if(!videoEntityWrapper.isPresent()) {
 			System.out.println("비디오를 찾을수 없습니다!");
 			return null;
 		}
 		else{
-			return videoEntityWrapper.get();
+			return videoEntityWrapper.get().toDTO();
 		}
 	}
 
@@ -36,7 +36,7 @@ public class VideoService {
 
         if(videoRepository.findByName(videoDto.getName()).isPresent())
         	return new Long(-1);
-        return videoRepository.save(videoDto.toEntity()).getId();
+        return videoRepository.save(videoDto.toEntity()).toDTO().getId();
 	}
 	
 	@Transactional
@@ -64,10 +64,10 @@ public class VideoService {
 
 	@Transactional
 	public List<String> GetLatestVideoName(){
-		List<VideoEntity> allOrderByCreateTimeAt = videoRepository.findAllOrderByCreateTimeAt();
+		List<VideoEntity> allOrderByCreateTimeAt = videoRepository.findTop4ByOrderByCreateTimeAtDesc();
 		List<String> fourLatestVideoName = new ArrayList<String>();
 		for(int i = 0; i< allOrderByCreateTimeAt.size();i++) {
-			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).getName());
+			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).toDTO().getName());
 		}
 
 		return fourLatestVideoName;
@@ -75,11 +75,11 @@ public class VideoService {
 
 	@Transactional
 	public List<String> GetMostLikeVideoName(){
-		List<VideoEntity> allOrderByLike = videoRepository.findAllOrderByLike();
+		List<VideoEntity> allOrderByLike = videoRepository.findTop4ByOrderByLikeDesc();
 		List<String> fourMostLikeVideoName = new ArrayList<String>();
 		for(int i = 0; i< allOrderByLike.size();i++) {
-			System.out.println(allOrderByLike.get(i).getName());
-			fourMostLikeVideoName.add(allOrderByLike.get(i).getName());
+			System.out.println(allOrderByLike.get(i).toDTO().getName());
+			fourMostLikeVideoName.add(allOrderByLike.get(i).toDTO().getName());
 		}
 		return fourMostLikeVideoName;
 	}

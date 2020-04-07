@@ -7,13 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import project.ridersserver.ridersserverapp.dto.VideoDto;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @SequenceGenerator(name = "VIDEO_SEQ_GENERATOR", sequenceName = "VIDEO_SEQ", initialValue = 1, allocationSize = 1)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Getter
 @Entity
 @Table(name = "video")
 public class VideoEntity {
@@ -21,41 +21,52 @@ public class VideoEntity {
     @GeneratedValue(strategy= GenerationType.SEQUENCE , generator="VIDEO_SEQ_GENERATOR")
     private Long id;
 	
-	@Column(name = "videoname", length = 100, nullable = false)
+	@Column(name = "videoname",length = 100, nullable = false , unique = true)
     private String name;
 	
 	@Column(name = "videolike",nullable = false)
     private Long like;
 
-	@Column(name = "videoView",nullable = false)//조회수
+	@Column(name = "videoview", nullable = false)//조회수
 	private Long view;
 
 	@CreatedDate
-	@Column(name = "createTimeAt",updatable = false)
+	@Column(updatable = false)
 	private LocalDateTime createTimeAt;
 
-	@Column(name = "away", nullable = true, length = 4000)
+	@Column(nullable = true, length = 4000)
 	private String away;
 
-	@Column(name = "home", nullable = true, length = 4000)
+	@Column(nullable = true, length = 4000)
 	private String home;
 
-	@Column(name = "two", nullable = true, length = 4000)
+	@Column(nullable = true, length = 4000)
 	private String two;
 
-	@Column(name = "three", nullable = true, length = 4000)
+	@Column(nullable = true, length = 4000)
 	private String three;
 
-	@Column(name = "dunk", nullable = true, length = 4000)
+	@Column(nullable = true, length = 4000)
 	private String dunk;
 
-	@Column(name = "block", nullable = true, length = 4000)
+	@Column(nullable = true, length = 4000)
 	private String block;
 
-
-
-
-
+	public VideoDto toDTO() {
+		return VideoDto.builder()
+				.id(id)
+				.name(name)
+				.like(like)
+				.view(view)
+				.createTimeAt(createTimeAt)
+				.away(away)
+				.home(home)
+				.two(two)
+				.three(three)
+				.dunk(dunk)
+				.block(block)
+				.build();
+	}
 
 	@Builder
 	public VideoEntity(Long id, String name, Long like, Long view, LocalDateTime createTimeAt,

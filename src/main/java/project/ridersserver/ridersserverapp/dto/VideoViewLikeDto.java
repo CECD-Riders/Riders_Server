@@ -23,9 +23,9 @@ public class VideoViewLikeDto {
     }
 
     @Builder
-    public VideoViewLikeDto(Long id, String membername, String videoName, boolean isLike){
+    public VideoViewLikeDto(Long id, String memberName, String videoName, boolean isLike){
         this.id = id;
-        this.memberName = membername;
+        this.memberName = memberName;
         this.videoName = videoName;
         this.isLike = isLike;
     }

@@ -16,10 +16,10 @@ public class VideoViewLikeService {
     private VideoViewLikeRepository videoViewLikeRepository;
 
     @Transactional
-    public VideoViewLikeEntity findByMemberNameAndVideoName(String memberName, String videoName){
+    public VideoViewLikeDto findByMemberNameAndVideoName(String memberName, String videoName){
         Optional<VideoViewLikeEntity> byMemberNameAndVideoName = videoViewLikeRepository.findByMemberNameAndVideoName(memberName, videoName);
         if(byMemberNameAndVideoName.isPresent())
-            return byMemberNameAndVideoName.get();
+            return byMemberNameAndVideoName.get().toDTO();
         else{
             System.out.println("존재하지 않는 조회 관계!");
             return null;

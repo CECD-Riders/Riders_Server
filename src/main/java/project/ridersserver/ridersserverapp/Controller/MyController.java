@@ -40,20 +40,28 @@ public class MyController {
 
     @GetMapping("/")
     public String index(Model model) {
-    	model.addAttribute("hostIp",ftpHostInfo.getHostIP());
+		model.addAttribute("hostIp",ftpHostInfo.getHostIP());
 
 		Calendar cal = Calendar.getInstance();
 		int year = cal.get(Calendar.YEAR);
-    	model.addAttribute("currentYear",year);
+		model.addAttribute("currentYear",year);
 
-        DayGame dayGame = crawler.GetTodayGame();
-        model.addAttribute("gameSize", dayGame.getGameList().size() + 1);
-        model.addAttribute("todayGame", dayGame);
+		DayGame dayGame = crawler.GetTodayGame();
+		if(dayGame != null){
+			model.addAttribute("gameSize", dayGame.getGameList().size() + 1);
+			model.addAttribute("todayGame", dayGame);
+		}
+		else{
+			model.addAttribute("gameSize", 2);
+//			model.addAttribute("todayGame", dayGame);
+		}
 
-        //인기영상 4개, 최신영상 4개 (videoName받아서 넘기면 이걸로 url 메핑해서 보여줄 수 있다)
+//		System.out.println(dayGame.getGameList().size());
+
+		//인기영상 4개, 최신영상 4개 (videoName받아서 넘기면 이걸로 url 메핑해서 보여줄 수 있다)
 		model.addAttribute("latestVideoName",videoService.GetLatestVideoName());
 		model.addAttribute("mostLikeVideoName",videoService.GetMostLikeVideoName());
-        return "/index";
+		return "/index";
     }
 
     @RequestMapping("/gameList")

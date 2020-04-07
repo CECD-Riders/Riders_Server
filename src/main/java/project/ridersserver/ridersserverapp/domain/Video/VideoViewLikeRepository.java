@@ -9,10 +9,8 @@ import java.util.Optional;
 
 public interface VideoViewLikeRepository extends JpaRepository<VideoViewLikeEntity,Long> {
 
-//    @Query(value = "SELECT v from VideoLikeEntity v WHERE v.memberName = ?1 and v.videoName = ?2")
     Optional<VideoViewLikeEntity> findByMemberNameAndVideoName(String memberName, String videoName);
 
-//    @Query(value = "DELETE from VideoLikeEntity v WHERE v.memberName = ?1 and v.videoName = ?2")
     int deleteByMemberNameAndVideoName(String memberName,String videoName);
 
     @Modifying

@@ -19,34 +19,39 @@ import project.ridersserver.ridersserverapp.crawling.Rank.TeamRank;
 
 @Component
 public class Crawler {
-	
+
 	public DayGame GetTodayGame() {
 		Calendar cal = Calendar.getInstance();
-        String url = "https://sports.news.naver.com/basketball/schedule/index.nhn?"
-        		+ "year=" + cal.get(Calendar.YEAR) 
-        		+"&month=" + (cal.get(Calendar.MONTH) + 1) 
-        		+"&category=nba#";
-        Document doc = null;
-        List<DayGame> gameList = new ArrayList<DayGame>();
-        try {
-            doc = Jsoup.connect(url).get();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        Elements todayGame = doc.select("div.selected");
-        for(Element eg: todayGame) {
-        	List<Game> list = new ArrayList<Game>();
-        	String date = eg.select("span.td_date").text();
-        	for(Element g: eg.select("tr")) {
-        		list.add(new Game(g.select("span.td_hour").text(),
-        				g.select("span.team_lft").text(),
-        				g.select("span.team_rgt").text(),
-        				g.select("strong.td_score").text(),
-        				g.select("span.td_stadium").text()));
-        	}
-        	gameList.add(new DayGame(date,list));
-        }
-        return gameList.get(0);
+		String url = "https://sports.news.naver.com/basketball/schedule/index.nhn?"
+				+ "year=" + cal.get(Calendar.YEAR)
+				+"&month=" + (cal.get(Calendar.MONTH) + 1)
+				+"&category=nba#";
+		Document doc = null;
+		List<DayGame> gameList = new ArrayList<DayGame>();
+		try {
+			doc = Jsoup.connect(url).get();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		Elements todayGame = doc.select("div.selected");
+		for(Element eg: todayGame) {
+			List<Game> list = new ArrayList<Game>();
+			String date = eg.select("span.td_date").text();
+			for(Element g: eg.select("tr")) {
+				list.add(new Game(g.select("span.td_hour").text(),
+						g.select("span.team_lft").text(),
+						g.select("span.team_rgt").text(),
+						g.select("strong.td_score").text(),
+						g.select("span.td_stadium").text()));
+			}
+			gameList.add(new DayGame(date,list));
+		}
+
+		System.out.println(gameList);
+		if(gameList.size() == 0)
+			return null;
+		else
+			return gameList.get(0);
 	}
 	
 	public List<DayGame> GetYearAndMonthGame(int year, int month){

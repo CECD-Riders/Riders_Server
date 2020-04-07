@@ -23,11 +23,8 @@ public interface VideoRepository extends JpaRepository<VideoEntity, Long>{
 	int updateSingleVideoLike(@Param("like") Long like, @Param("videoName") String videoName);
 
 	//최신순으로 4개 가져오기
-	@Query(value = "SELECT v FROM VideoEntity v ORDER BY v.createTimeAt DESC")
-	List<VideoEntity> findAllOrderByCreateTimeAt();
+	List<VideoEntity> findTop4ByOrderByCreateTimeAtDesc();
 
-	//인기순으로 4개 가져오기
-	@Query(value = "SELECT v FROM VideoEntity v ORDER BY v.like DESC")
-	List<VideoEntity> findAllOrderByLike();
-
+//	//인기순으로 4개 가져오기
+	List<VideoEntity> findTop4ByOrderByLikeDesc();
 }

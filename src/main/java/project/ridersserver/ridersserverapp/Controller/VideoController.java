@@ -44,9 +44,6 @@ public class VideoController {
         String memberName = request.getParameter("memberName");
         String videoName = request.getParameter("videoName");
         Long videoLike = Long.parseLong(request.getParameter("like"));
-        System.out.println(recommendMsg);
-        System.out.println(memberName);
-        System.out.println(videoName);
 
         if(recommendMsg.equals("추천")){//-> (추천관계 저장->) videoViewLike에서 isLike를 true로 + videoName기준 video 테이블에 접근해서 like 1증가
             try {
@@ -81,9 +78,6 @@ public class VideoController {
                 e.printStackTrace();
                 return -1;
             }
-
-
-
         }
     }
 
@@ -91,41 +85,38 @@ public class VideoController {
     @GetMapping("/member/videoMark")
     @ResponseBody
     public String videoMarkHandler(HttpServletRequest request) {
-        System.out.println(request.getParameter("videoName"));
-        System.out.println(request.getParameter("eventName"));
         String videoName = request.getParameter("videoName");
         String eventName = request.getParameter("eventName");
 
-        VideoEntity videoEntity = videoService.loadVideoByVideoname(videoName);
+        VideoDto videoDto = videoService.loadVideoByVideoname(videoName);
         String eventStr = "";
         if(eventName.equals("홈"))
-            eventStr = videoEntity.getHome();
+            eventStr = videoDto.getHome();
         else if(eventName.equals("어웨이"))
-            eventStr = videoEntity.getAway();
+            eventStr = videoDto.getAway();
         else if(eventName.equals("덩크"))
-            eventStr = videoEntity.getDunk();
+            eventStr = videoDto.getDunk();
         else if(eventName.equals("3점슛"))
-            eventStr = videoEntity.getThree();
+            eventStr = videoDto.getThree();
         else if(eventName.equals("2점슛"))
-            eventStr = videoEntity.getTwo();
+            eventStr = videoDto.getTwo();
         else if(eventName.equals("블락"))
-            eventStr = videoEntity.getBlock();
+            eventStr = videoDto.getBlock();
         else
             System.out.println("nothing");
 
-        String[] timeSegments = eventStr.split("-");
         String markStr = "[";
-        for(int i = 0 ; i < timeSegments.length;i++)
-        {
-            String parsedEventTime = "{time: " + timeSegments[i] + "},";
-            markStr = markStr + parsedEventTime;
-        }
+        if(eventStr != null){
+            String[] timeSegments = eventStr.split("-");
+            for(int i = 0 ; i < timeSegments.length;i++)
+            {
+                String parsedEventTime = "{time: " + timeSegments[i] + "},";
+                markStr = markStr + parsedEventTime;
+            }
+        }else
+            markStr = markStr + "{}";
+
         markStr = markStr + "]";
-        System.out.println(markStr);
-
-        //ocr로 event별 시간대가 db에 저장되어 있다면 (videoName, eventName)으로 가져와서 markStr에 저장하면 끝
-//        String markStr = "[{time: 90.5}, {time: 150}, {time: 250}, {time: 370},]";
-
         return markStr;
     }
 
@@ -134,7 +125,6 @@ public class VideoController {
     public String watchVideo(HttpServletRequest request, Model model, Principal principal) {
         String memberName;
         memberName = principal.getName();
-        System.out.println(memberName);
 
         String videoName = request.getParameter("videoName");
         if(videoName == null){
@@ -158,44 +148,30 @@ public class VideoController {
         model.addAttribute("hostIp",ftpHostInfo.getHostIP());
         model.addAttribute("videoName",videoName);
 
-        VideoEntity videoEntity = videoService.loadVideoByVideoname(videoName);
+        VideoDto videoDto = videoService.loadVideoByVideoname(videoName);
         //영상이 있는지 없는지 데이터 베이스 조회
-        if(videoEntity !=null) {//->있으면
-
-
-//            //영상이 있을 시에 현 접속자와 영상 사이의 추천관계 판단
-//            VideoViewLikeEntity videoLikeEntity = videoViewLikeService.findByMemberNameAndVideoName(memberName, videoName);
-//            if(videoLikeEntity !=null) { //추천관계가 있음(이미 추천을 눌렀음)
-//                model.addAttribute("recommendationMsg","해지");
-//            }else {
-//                model.addAttribute("recommendationMsg","추천");
-//            }
-
+        if(videoDto !=null) {
             //영상이 있을 시에 현 접속자와 영상 사이의 조회 관계 판단
-            VideoViewLikeEntity videoViewLikeEntity = videoViewLikeService.findByMemberNameAndVideoName(memberName, videoName);
-            if(videoViewLikeEntity !=null) { //조회관계가 있음
-                model.addAttribute("view",videoEntity.getView());
-                if(videoViewLikeEntity.isLike()) //-> 이미 좋아요를 누른 상태
+            VideoViewLikeDto videoViewLikeDto = videoViewLikeService.findByMemberNameAndVideoName(memberName, videoName);
+            if(videoViewLikeDto !=null) { //조회관계가 있음
+                model.addAttribute("view",videoDto.getView());
+                if(videoViewLikeDto.isLike()) //-> 이미 좋아요를 누른 상태
                     model.addAttribute("recommendationMsg","해지");
                 else  //좋아요를 누르지 않은 상태
                     model.addAttribute("recommendationMsg","추천");
             }else { //조회관계가 없음
-                VideoViewLikeDto videoViewLikeDto = new VideoViewLikeDto();
-                videoViewLikeDto.setMemberName(memberName);
-                videoViewLikeDto.setVideoName(videoName);
-                videoViewLikeDto.setLike(false);
-                videoViewLikeService.saveVideoViewLike(videoViewLikeDto);
-
-                VideoDto videoDto = new VideoDto();
-                videoDto.setName(videoName);
-                videoDto.setView(videoEntity.getView());
+                VideoViewLikeDto newVideoViewLikeDto = new VideoViewLikeDto();
+                newVideoViewLikeDto.setMemberName(memberName);
+                newVideoViewLikeDto.setVideoName(videoName);
+                newVideoViewLikeDto.setLike(false);
+                videoViewLikeService.saveVideoViewLike(newVideoViewLikeDto);
                 videoService.UpSingleVideoView(videoDto);
-                model.addAttribute("view",videoEntity.getView() + 1);
+                model.addAttribute("view",videoDto.getView() + 1);
                 model.addAttribute("recommendationMsg","추천");
             }
 
-            model.addAttribute("like",videoEntity.getLike());
-            model.addAttribute("day",videoEntity.getCreateTimeAt());
+            model.addAttribute("like",videoDto.getLike());
+            model.addAttribute("day",videoDto.getCreateTimeAt());
             model.addAttribute("member",memberName);
             return "/watchVideo";
         }
@@ -225,8 +201,6 @@ public class VideoController {
         String localPath = request.getParameter("path");                    //로컬 경로(전송을 위해 필요한 경로)
         String HostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
         localPath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
-        System.out.println(localPath);
-        System.out.println(HostfileName);
 
         //1. 영상의 이벤트 정보를 디비에 저장할 스트링 생성
         String awayTime = "", homeTime = "", twoTime = "", threeTime = "", dunkTime = "", blockTime = "";
@@ -235,10 +209,7 @@ public class VideoController {
         videoConverter.setFrameRate(30);
         videoConverter.setImageDomain(10, 10, 300, 45);
         ArrayList<String> convertVideoToString = videoConverter.ConvertVideoToString();
-        for(int i = 0 ; i < convertVideoToString.size();i++)
-        {
-//            System.out.println(convertVideoToString.get(i));
-
+        for(int i = 0 ; i < convertVideoToString.size();i++) {
             String[] splitedStr = convertVideoToString.get(i).split("-");
             String timeInfo = splitedStr[0];
             String teamInfo = splitedStr[1];
@@ -260,14 +231,6 @@ public class VideoController {
             else
                 System.out.println("nothing");
         }
-        System.out.println("======================================================");
-        System.out.println(homeTime);
-        System.out.println(awayTime);
-        System.out.println(twoTime);
-        System.out.println(threeTime);
-        System.out.println(blockTime);
-        System.out.println(dunkTime);
-
 
         //2. 영상전송
         Long id;
@@ -299,7 +262,4 @@ public class VideoController {
         }
         return "redirect:/admin/videoUpload?msg=succes";
     }
-
-
-
 }
