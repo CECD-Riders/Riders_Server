@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import lombok.AllArgsConstructor;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
 import project.ridersserver.ridersserverapp.domain.Video.VideoRepository;
-import project.ridersserver.ridersserverapp.dto.VideoDto;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;
@@ -20,46 +19,44 @@ public class VideoService {
 	private VideoRepository videoRepository;
 
 	@Transactional
-	public VideoDto loadVideoByVideoname(String videoName){
+	public VideoEntity loadVideoByVideoname(String videoName){
 		Optional<VideoEntity> videoEntityWrapper = videoRepository.findByName(videoName);
 		if(!videoEntityWrapper.isPresent()) {
 			System.out.println("비디오를 찾을수 없습니다!");
 			return null;
 		}
 		else{
-			return videoEntityWrapper.get().toDTO();
+			return videoEntityWrapper.get();
 		}
 	}
 
 	@Transactional
-	public Long SaveSingleVideo(VideoDto videoDto) {
+	public Long SaveSingleVideo(VideoEntity videoEntity) {
 
-        if(videoRepository.findByName(videoDto.getName()).isPresent())
+        if(videoRepository.findByName(videoEntity.getName()).isPresent())
         	return new Long(-1);
-        return videoRepository.save(videoDto.toEntity()).toDTO().getId();
+        return videoRepository.save(videoEntity).getId();
 	}
 	
 	@Transactional
-	public void DeleteSingleVideo(VideoDto videoDto) {
-		System.out.println(videoDto); 
-        System.out.println(videoDto.getName());
-        if(videoRepository.findByName(videoDto.getName()).isPresent())
-        	videoRepository.deleteByName(videoDto.getName());
+	public void DeleteSingleVideo(VideoEntity videoEntity) {
+        if(videoRepository.findByName(videoEntity.getName()).isPresent())
+        	videoRepository.deleteByName(videoEntity.getName());
 	}
 
 	@Transactional
-	public int UpSingleVideoView(VideoDto videoDto){
-		return videoRepository.updateSingleVideoView(videoDto.getView() + 1,videoDto.getName());
+	public int UpSingleVideoView(VideoEntity videoEntity){
+		return videoRepository.updateSingleVideoView(videoEntity.getView() + 1,videoEntity.getName());
 	}
 
 	@Transactional
-	public int UpSingleVideoLike(VideoDto videoDto){
-		return videoRepository.updateSingleVideoLike(videoDto.getLike() + 1,videoDto.getName());
+	public int UpSingleVideoLike(VideoEntity videoEntity){
+		return videoRepository.updateSingleVideoLike(videoEntity.getLike() + 1,videoEntity.getName());
 	}
 
 	@Transactional
-	public int DownSingleVideoLike(VideoDto videoDto){
-		return videoRepository.updateSingleVideoLike(videoDto.getLike() - 1,videoDto.getName());
+	public int DownSingleVideoLike(VideoEntity videoEntity){
+		return videoRepository.updateSingleVideoLike(videoEntity.getLike() - 1,videoEntity.getName());
 	}
 
 	@Transactional
@@ -67,7 +64,7 @@ public class VideoService {
 		List<VideoEntity> allOrderByCreateTimeAt = videoRepository.findTop4ByOrderByCreateTimeAtDesc();
 		List<String> fourLatestVideoName = new ArrayList<String>();
 		for(int i = 0; i< allOrderByCreateTimeAt.size();i++) {
-			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).toDTO().getName());
+			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).getName());
 		}
 
 		return fourLatestVideoName;
@@ -78,8 +75,8 @@ public class VideoService {
 		List<VideoEntity> allOrderByLike = videoRepository.findTop4ByOrderByLikeDesc();
 		List<String> fourMostLikeVideoName = new ArrayList<String>();
 		for(int i = 0; i< allOrderByLike.size();i++) {
-			System.out.println(allOrderByLike.get(i).toDTO().getName());
-			fourMostLikeVideoName.add(allOrderByLike.get(i).toDTO().getName());
+			System.out.println(allOrderByLike.get(i).getName());
+			fourMostLikeVideoName.add(allOrderByLike.get(i).getName());
 		}
 		return fourMostLikeVideoName;
 	}

@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import project.ridersserver.ridersserverapp.dto.MemberDto;
+import project.ridersserver.ridersserverapp.domain.Member.MemberEntity;
 import project.ridersserver.ridersserverapp.service.MemberService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -28,8 +28,8 @@ public class MemberController {
 
     //회원가입 동작
     @PostMapping("/member/signup")
-    public String SignupAction(HttpServletRequest request, MemberDto memberDto, Model model) {
-        Long id = memberService.joinUser(memberDto);
+    public String SignupAction(HttpServletRequest request, MemberEntity memberEntity, Model model) {
+        Long id = memberService.joinUser(memberEntity);
         return "redirect:/member/login";
     }
 

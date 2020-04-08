@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import project.ridersserver.ridersserverapp.domain.Member.MemberEntity;
 import project.ridersserver.ridersserverapp.domain.Member.MemberRepository;
 import project.ridersserver.ridersserverapp.domain.Role;
-import project.ridersserver.ridersserverapp.dto.MemberDto;
 
 @Service
 @AllArgsConstructor
@@ -37,18 +36,17 @@ public class MemberService implements UserDetailsService {
 
     //회원가입
     @Transactional
-    public Long joinUser(MemberDto memberDto) {
+    public Long joinUser(MemberEntity memberEntity) {
         // 비밀번호 암호화
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        memberDto.setPassword(passwordEncoder.encode(memberDto.getPassword()));
+        memberEntity.setPassword(passwordEncoder.encode(memberEntity.getPassword()));
 
-        System.out.println(memberDto);
         //아이디 중복시  -1반환
-        if(memberRepository.findByEmail(memberDto.getEmail()).isPresent())
+        if(memberRepository.findByEmail(memberEntity.getEmail()).isPresent())
             return new Long(-1);
 
         //성공적으로 회원가입 완료시 그 회원의 아이디 반환(>=1)
-        return memberRepository.save(memberDto.toEntity()).getId();
+        return memberRepository.save(memberEntity).getId();
     }
 
     @Override

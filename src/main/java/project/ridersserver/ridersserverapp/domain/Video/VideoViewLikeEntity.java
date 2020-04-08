@@ -1,16 +1,13 @@
 package project.ridersserver.ridersserverapp.domain.Video;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import project.ridersserver.ridersserverapp.dto.VideoViewLikeDto;
+import lombok.*;
 
 import javax.persistence.*;
 
 @SequenceGenerator(name = "VIDEOLIKE_SEQ_GENERATOR", sequenceName = "VIDEOLIKE_SEQ", initialValue = 1, allocationSize = 1)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
+@Setter
 @Entity
 @Table(name = "videoviewlike")
 public class VideoViewLikeEntity {
@@ -28,21 +25,5 @@ public class VideoViewLikeEntity {
     @Column(nullable = false)
     private boolean isLike;
 
-    public VideoViewLikeDto toDTO(){
-        return VideoViewLikeDto.builder()
-                .id(id)
-                .memberName(memberName)
-                .videoName(videoName)
-                .isLike(isLike)
-                .build();
-    }
-
-    @Builder
-    public VideoViewLikeEntity(Long id, String memberName, String videoName, boolean isLike){
-        this.id = id;
-        this.memberName = memberName;
-        this.videoName = videoName;
-        this.isLike = isLike;
-    }
 
 }
