@@ -7,6 +7,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @SequenceGenerator(name = "VIDEO_SEQ_GENERATOR", sequenceName = "VIDEO_SEQ", initialValue = 1, allocationSize = 1)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
@@ -32,23 +34,25 @@ public class VideoEntity {
 	@Column(updatable = false)
 	private LocalDateTime createTimeAt;
 
-	@Column(nullable = true, length = 4000)
-	private String away;
+	@Column(name = "hometeam",length = 100, nullable = false)
+	private String homeTeam;
 
-	@Column(nullable = true, length = 4000)
-	private String home;
+	@Column(name = "awayteam",length = 100, nullable = false)
+	private String awayTeam;
 
-	@Column(nullable = true, length = 4000)
-	private String two;
+	//, cascade = CascadeType.PERSIST : 이러면 컬랙션에 들어있는 모든 데이터들과 해당 객체가 연동된다(해당 객체를 저장 및 삭제하면 연동된 객체들도 변함)
+	//여기선 videoEntity => 나머지로 전파되도록 함
+	// 기본적으로 OneToMany는 lazy방식 + ManyToOne은 eger방식
 
-	@Column(nullable = true, length = 4000)
-	private String three;
+	@OneToMany(mappedBy = "video", cascade = CascadeType.PERSIST)
+	private Set<VideoEventEntity> events = new HashSet<>();
 
-	@Column(nullable = true, length = 4000)
-	private String dunk;
+	public void addEvent(VideoEventEntity event){
+		this.getEvents().add(event);
+		event.setVideo(this);
+	}
 
-	@Column(nullable = true, length = 4000)
-	private String block;
+
 
 
 }

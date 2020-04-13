@@ -1,5 +1,6 @@
 package project.ridersserver.ridersserverapp.Controller;
 
+import javafx.util.Pair;
 import lombok.AllArgsConstructor;
 import net.sourceforge.tess4j.TesseractException;
 import org.bytedeco.javacv.FrameGrabber;
@@ -13,6 +14,8 @@ import project.ridersserver.ridersserverapp.FTP.FTPHostInfo;
 import project.ridersserver.ridersserverapp.FTP.FTPUploader;
 import project.ridersserver.ridersserverapp.VideoConverter.VideoConverter;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
+import project.ridersserver.ridersserverapp.domain.Video.VideoEventEntity;
+import project.ridersserver.ridersserverapp.domain.Video.VideoEventRepository;
 import project.ridersserver.ridersserverapp.domain.Video.VideoViewLikeEntity;
 import project.ridersserver.ridersserverapp.service.VideoViewLikeService;
 import project.ridersserver.ridersserverapp.service.VideoService;
@@ -21,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @AllArgsConstructor
@@ -33,6 +37,8 @@ public class VideoController {
     private FTPHostInfo ftpHostInfo;
 
     private VideoConverter videoConverter;
+
+    private VideoEventRepository videoEventRepository;
 
     //좋아요 처리
     @RequestMapping("/member/vidoLike")
@@ -86,29 +92,35 @@ public class VideoController {
         String videoName = request.getParameter("videoName");
         String eventName = request.getParameter("eventName");
 
-        VideoEntity videoEntity = videoService.loadVideoByVideoname(videoName);
-        String eventStr = "";
-        if(eventName.equals("홈"))
-            eventStr = videoEntity.getHome();
-        else if(eventName.equals("어웨이"))
-            eventStr = videoEntity.getAway();
-        else if(eventName.equals("덩크"))
-            eventStr = videoEntity.getDunk();
-        else if(eventName.equals("3점슛"))
-            eventStr = videoEntity.getThree();
-        else if(eventName.equals("2점슛"))
-            eventStr = videoEntity.getTwo();
-        else if(eventName.equals("블락"))
-            eventStr = videoEntity.getBlock();
+        VideoEntity videoEntity = videoService.loadVideoByVideoName(videoName);
+
+        List<VideoEventEntity> videoEventEntities = new ArrayList<>();
+
+        if(eventName.equals("어웨이")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(2,videoEntity);
+        }
+        else if(eventName.equals("홈")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(1,videoEntity);
+        }
+        else if(eventName.equals("2점슛")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(4,videoEntity);
+        }
+        else if(eventName.equals("3점슛")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(3,videoEntity);
+        }
+        else if(eventName.equals("덩크")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(5,videoEntity);
+        }
+        else if(eventName.equals("블락")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(6,videoEntity);
+        }
         else
             System.out.println("nothing");
 
         String markStr = "[";
-        if(eventStr != null){
-            String[] timeSegments = eventStr.split("-");
-            for(int i = 0 ; i < timeSegments.length;i++)
-            {
-                String parsedEventTime = "{time: " + timeSegments[i] + "},";
+        if(videoEventEntities.size() != 0){
+            for(VideoEventEntity videoEvent : videoEventEntities){
+                String parsedEventTime = "{time: " + videoEvent.getTime() + "},";
                 markStr = markStr + parsedEventTime;
             }
         }else
@@ -146,7 +158,7 @@ public class VideoController {
         model.addAttribute("hostIp",ftpHostInfo.getHostIP());
         model.addAttribute("videoName",videoName);
 
-        VideoEntity videoEntity = videoService.loadVideoByVideoname(videoName);
+        VideoEntity videoEntity = videoService.loadVideoByVideoName(videoName);
         //영상이 있는지 없는지 데이터 베이스 조회
         if(videoEntity !=null) {
             //영상이 있을 시에 현 접속자와 영상 사이의 조회 관계 판단
@@ -206,47 +218,71 @@ public class VideoController {
         videoConverter.setVideoFilePath(localPath);
         videoConverter.setFrameRate(30);
         videoConverter.setImageDomain(10, 10, 300, 45);
-        ArrayList<String> convertVideoToString = videoConverter.ConvertVideoToString();
-        for(int i = 0 ; i < convertVideoToString.size();i++) {
-            String[] splitedStr = convertVideoToString.get(i).split("-");
-            String timeInfo = splitedStr[0];
-            String teamInfo = splitedStr[1];
-            String actionInfo = splitedStr[2];
-            System.out.println(timeInfo + "/" + teamInfo + "/" + actionInfo);
-            if(teamInfo.equals("Away"))
-                awayTime = awayTime + timeInfo + "-";
-            else
-                homeTime = homeTime + timeInfo + "-";
+        ArrayList<Pair<Double,String>> convertVideoToString = videoConverter.ConvertVideoToString();
+        VideoEntity videoEntity = new VideoEntity();
 
-            if(actionInfo.equals("2Point"))
-                twoTime = twoTime + timeInfo + "-";
-            else if(actionInfo.equals("3Point"))
-                threeTime = threeTime + timeInfo + "-";
-            else if(actionInfo.equals("Dunk"))
-                dunkTime = dunkTime + timeInfo + "-";
-            else if(actionInfo.equals("Block"))
-                blockTime = blockTime + timeInfo + "-";
+        for(int i = 0 ; i < convertVideoToString.size();i++) {
+            double timeInfo = convertVideoToString.get(i).getKey();
+            String[] splitedStr = convertVideoToString.get(i).getValue().split("-");
+            String teamInfo = splitedStr[0];
+            String actionInfo = splitedStr[1];
+            System.out.println(timeInfo + "/" + teamInfo + "/" + actionInfo);
+
+            if(teamInfo.equals("Away")){
+                VideoEventEntity videoEventEntity = new VideoEventEntity();
+                videoEventEntity.setTime(timeInfo);
+                videoEventEntity.setWhichEvent(2);
+                videoEntity.addEvent(videoEventEntity);
+            }
+            else{
+                VideoEventEntity videoEventEntity = new VideoEventEntity();
+                videoEventEntity.setTime(timeInfo);
+                videoEventEntity.setWhichEvent(1);
+                videoEntity.addEvent(videoEventEntity);
+            }
+
+            if(actionInfo.equals("2Point")){
+                VideoEventEntity videoEventEntity = new VideoEventEntity();
+                videoEventEntity.setTime(timeInfo);
+                videoEventEntity.setWhichEvent(4);
+                videoEntity.addEvent(videoEventEntity);
+            }
+            else if(actionInfo.equals("3Point")){
+                VideoEventEntity videoEventEntity = new VideoEventEntity();
+                videoEventEntity.setTime(timeInfo);
+                videoEventEntity.setWhichEvent(3);
+                videoEntity.addEvent(videoEventEntity);
+            }
+            else if(actionInfo.equals("Dunk")){
+                VideoEventEntity videoEventEntity = new VideoEventEntity();
+                videoEventEntity.setTime(timeInfo);
+                videoEventEntity.setWhichEvent(5);
+                videoEntity.addEvent(videoEventEntity);
+            }
+            else if(actionInfo.equals("Block")){
+                VideoEventEntity videoEventEntity = new VideoEventEntity();
+                videoEventEntity.setTime(timeInfo);
+                videoEventEntity.setWhichEvent(6);
+                videoEntity.addEvent(videoEventEntity);
+            }
             else
                 System.out.println("nothing");
         }
 
         //2. 영상전송
-        Long id;
-        VideoEntity videoEntity = new VideoEntity();
+        String[] parsedStr = HostfileName.split("-");
+        String[] parsedStr2 = parsedStr[2].split("\\.");
+
+        videoEntity.setHomeTeam(parsedStr[1]);
+        videoEntity.setAwayTeam(parsedStr2[0]);
         videoEntity.setName(HostfileName);
         videoEntity.setLike(new Long(0));
         videoEntity.setView(new Long(0));
         videoEntity.setCreateTimeAt(LocalDateTime.now());
-        videoEntity.setAway(awayTime);
-        videoEntity.setHome(homeTime);
-        videoEntity.setTwo(twoTime);
-        videoEntity.setThree(threeTime);
-        videoEntity.setDunk(dunkTime);
-        videoEntity.setBlock(blockTime);
         FTPUploader ftpUploader;
         try {
             //디비 -> FTP
-            id = videoService.SaveSingleVideo(videoEntity);
+            Long id = videoService.SaveSingleVideo(videoEntity);
             if (id == -1) {
                 return "redirect:/admin/videoUpload?msg=overlap";
             } else {

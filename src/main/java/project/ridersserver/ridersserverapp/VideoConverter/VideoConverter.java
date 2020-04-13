@@ -1,5 +1,6 @@
 package project.ridersserver.ridersserverapp.VideoConverter;
 
+import javafx.util.Pair;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -60,10 +61,9 @@ public class VideoConverter {
         imageH = h;
     }
 
-    public ArrayList<String> ConvertVideoToString() throws FrameGrabber.Exception, TesseractException {
-
+    public ArrayList<Pair<Double,String>> ConvertVideoToString() throws FrameGrabber.Exception, TesseractException {
         boolean isGo = true;
-        ArrayList<String> ocrResultList = new ArrayList<String>();
+        ArrayList<Pair<Double,String>> ocrResultList = new ArrayList<>();
         NameConverter nameConverter = new NameConverter();
         Tesseract tesseract = new Tesseract();
         tesseract.setDatapath(tesseractPath);
@@ -91,9 +91,7 @@ public class VideoConverter {
 
                         //시간 뽑아내기(i번째 프래임이겠지?)
                         double currentVideoTime = (double) i / frameRate;
-
-                        succesStr = currentVideoTime + "-" + succesStr;
-                        ocrResultList.add(succesStr);
+                        ocrResultList.add(new Pair<>(currentVideoTime,succesStr));
                         isGo = false;
                     }
                 }

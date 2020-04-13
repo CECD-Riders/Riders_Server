@@ -12,6 +12,7 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -19,7 +20,7 @@ public class VideoService {
 	private VideoRepository videoRepository;
 
 	@Transactional
-	public VideoEntity loadVideoByVideoname(String videoName){
+	public VideoEntity loadVideoByVideoName(String videoName){
 		Optional<VideoEntity> videoEntityWrapper = videoRepository.findByName(videoName);
 		if(!videoEntityWrapper.isPresent()) {
 			System.out.println("비디오를 찾을수 없습니다!");
@@ -30,9 +31,10 @@ public class VideoService {
 		}
 	}
 
+
+
 	@Transactional
 	public Long SaveSingleVideo(VideoEntity videoEntity) {
-
         if(videoRepository.findByName(videoEntity.getName()).isPresent())
         	return new Long(-1);
         return videoRepository.save(videoEntity).getId();
