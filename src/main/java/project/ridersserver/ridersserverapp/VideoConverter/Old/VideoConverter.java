@@ -1,4 +1,4 @@
-package project.ridersserver.ridersserverapp.VideoConverter;
+package project.ridersserver.ridersserverapp.VideoConverter.Old;
 
 import javafx.util.Pair;
 import net.sourceforge.tess4j.Tesseract;
@@ -8,6 +8,7 @@ import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.stereotype.Component;
+import project.ridersserver.ridersserverapp.VideoConverter.Old.NameConverter;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -96,13 +97,10 @@ public class VideoConverter {
                     }
                 }
                 else
-                {
                     isGo = true;
-                }
             }
-            else {
+            else
                 g.grabImage();
-            }
         }
 
         g.stop();

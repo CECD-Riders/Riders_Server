@@ -20,7 +20,7 @@ public class VideoService {
 	private VideoRepository videoRepository;
 
 	@Transactional
-	public VideoEntity loadVideoByVideoName(String videoName){
+	public VideoEntity findVideoByVideoName(String videoName){
 		Optional<VideoEntity> videoEntityWrapper = videoRepository.findByName(videoName);
 		if(!videoEntityWrapper.isPresent()) {
 			System.out.println("비디오를 찾을수 없습니다!");
@@ -30,8 +30,6 @@ public class VideoService {
 			return videoEntityWrapper.get();
 		}
 	}
-
-
 
 	@Transactional
 	public Long SaveSingleVideo(VideoEntity videoEntity) {
@@ -48,17 +46,17 @@ public class VideoService {
 
 	@Transactional
 	public int UpSingleVideoView(VideoEntity videoEntity){
-		return videoRepository.updateSingleVideoView(videoEntity.getView() + 1,videoEntity.getName());
+		return videoRepository.updateSingleVideoView(videoEntity.getView() + 1,videoEntity.getId());
 	}
 
 	@Transactional
 	public int UpSingleVideoLike(VideoEntity videoEntity){
-		return videoRepository.updateSingleVideoLike(videoEntity.getLike() + 1,videoEntity.getName());
+		return videoRepository.updateSingleVideoLike(videoEntity.getLike() + 1,videoEntity.getId());
 	}
 
 	@Transactional
 	public int DownSingleVideoLike(VideoEntity videoEntity){
-		return videoRepository.updateSingleVideoLike(videoEntity.getLike() - 1,videoEntity.getName());
+		return videoRepository.updateSingleVideoLike(videoEntity.getLike() - 1,videoEntity.getId());
 	}
 
 	@Transactional
@@ -68,7 +66,6 @@ public class VideoService {
 		for(int i = 0; i< allOrderByCreateTimeAt.size();i++) {
 			fourLatestVideoName.add(allOrderByCreateTimeAt.get(i).getName());
 		}
-
 		return fourLatestVideoName;
 	}
 

@@ -12,15 +12,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import project.ridersserver.ridersserverapp.FTP.FTPHostInfo;
 import project.ridersserver.ridersserverapp.FTP.FTPUploader;
-import project.ridersserver.ridersserverapp.VideoConverter.VideoConverter;
+import project.ridersserver.ridersserverapp.VideoConverter.Old.VideoConverter;
+import project.ridersserver.ridersserverapp.VideoConverter.VideoTextDetector;
+import project.ridersserver.ridersserverapp.domain.Member.MemberEntity;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEventEntity;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEventRepository;
 import project.ridersserver.ridersserverapp.domain.Video.VideoViewLikeEntity;
+import project.ridersserver.ridersserverapp.service.MemberService;
 import project.ridersserver.ridersserverapp.service.VideoViewLikeService;
 import project.ridersserver.ridersserverapp.service.VideoService;
 
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Member;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,13 +36,18 @@ public class VideoController {
 
     private VideoService videoService;
 
+    private MemberService memberService;
+
     private VideoViewLikeService videoViewLikeService;
 
     private FTPHostInfo ftpHostInfo;
 
     private VideoConverter videoConverter;
 
+    private VideoTextDetector videoTextDetector;
+
     private VideoEventRepository videoEventRepository;
+
 
     //좋아요 처리
     @RequestMapping("/member/vidoLike")
@@ -49,40 +58,10 @@ public class VideoController {
         String videoName = request.getParameter("videoName");
         Long videoLike = Long.parseLong(request.getParameter("like"));
 
-        if(recommendMsg.equals("추천")){//-> (추천관계 저장->) videoViewLike에서 isLike를 true로 + videoName기준 video 테이블에 접근해서 like 1증가
-            try {
-                VideoEntity videoEntity = new VideoEntity();
-                videoEntity.setName(videoName);
-                videoEntity.setLike(videoLike);
-                videoService.UpSingleVideoLike(videoEntity);
+        MemberEntity memberEntity = memberService.findMemberByMemberName(memberName);
+        VideoEntity videoEntity = videoService.findVideoByVideoName(videoName);
 
-                VideoViewLikeEntity videoViewLikeEntity = new VideoViewLikeEntity();
-                videoViewLikeEntity.setMemberName(memberName);
-                videoViewLikeEntity.setVideoName(videoName);
-                videoViewLikeService.updateSingleVideoLike(videoViewLikeEntity,true);
-                return 1;
-            }catch (Exception e){   //->뭔가 실패한것
-                e.printStackTrace();
-                return -1;
-            }
-        }
-        else{//->(추천관계 삭제->)videoViewLike에서 isLike를 false로 + videoName기준 video 테이블에 접근해서 like 1 감소
-            try {
-                VideoEntity videoEntity = new VideoEntity();
-                videoEntity.setName(videoName);
-                videoEntity.setLike(videoLike);
-                videoService.DownSingleVideoLike(videoEntity);
-
-                VideoViewLikeEntity videoViewLikeEntity = new VideoViewLikeEntity();
-                videoViewLikeEntity.setMemberName(memberName);
-                videoViewLikeEntity.setVideoName(videoName);
-                videoViewLikeService.updateSingleVideoLike(videoViewLikeEntity,false);
-                return 1;
-            }catch (Exception e){
-                e.printStackTrace();
-                return -1;
-            }
-        }
+        return UpdateLikeRelation(memberEntity,videoEntity,recommendMsg);
     }
 
     //비디오 마크 처리
@@ -92,77 +71,36 @@ public class VideoController {
         String videoName = request.getParameter("videoName");
         String eventName = request.getParameter("eventName");
 
-        VideoEntity videoEntity = videoService.loadVideoByVideoName(videoName);
+        VideoEntity videoEntity = videoService.findVideoByVideoName(videoName);
+        List<VideoEventEntity> videoEventList =  GetVideoEventInfo(videoEntity,eventName);
 
-        List<VideoEventEntity> videoEventEntities = new ArrayList<>();
-
-        if(eventName.equals("어웨이")){
-            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(2,videoEntity);
-        }
-        else if(eventName.equals("홈")){
-            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(1,videoEntity);
-        }
-        else if(eventName.equals("2점슛")){
-            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(4,videoEntity);
-        }
-        else if(eventName.equals("3점슛")){
-            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(3,videoEntity);
-        }
-        else if(eventName.equals("덩크")){
-            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(5,videoEntity);
-        }
-        else if(eventName.equals("블락")){
-            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(6,videoEntity);
-        }
-        else
-            System.out.println("nothing");
-
-        String markStr = "[";
-        if(videoEventEntities.size() != 0){
-            for(VideoEventEntity videoEvent : videoEventEntities){
-                String parsedEventTime = "{time: " + videoEvent.getTime() + "},";
-                markStr = markStr + parsedEventTime;
-            }
-        }else
-            markStr = markStr + "{}";
-
-        markStr = markStr + "]";
-        return markStr;
+        return MakeMarkStr(videoEventList);
     }
+
+
 
     //영상 시청
     @RequestMapping("/member/watch")
     public String watchVideo(HttpServletRequest request, Model model, Principal principal) {
-        String memberName;
-        memberName = principal.getName();
-
+        String memberName = principal.getName();
         String videoName = request.getParameter("videoName");
         if(videoName == null){
             String useDate = request.getParameter("year");
             String date = request.getParameter("date");
-            String dateP1[] = date.split("\\s+");
-            String dateP2[] = dateP1[0].split("\\.");
-
-            String month = dateP2[0];
-            String day = dateP2[1];
-            if(month.length()==1)
-                month = "0"+month;
-            if(day.length()==1)
-                day = "0"+day;
-            useDate = useDate + month + day;
-
             String leftTeam = request.getParameter("leftTeam");
             String rightTeam = request.getParameter("rightTeam");
-            videoName = useDate + "-" +leftTeam + "-" + rightTeam + ".mp4";
+            videoName = MakeVideoName(useDate,date,leftTeam,rightTeam);
         }
+
         model.addAttribute("hostIp",ftpHostInfo.getHostIP());
         model.addAttribute("videoName",videoName);
 
-        VideoEntity videoEntity = videoService.loadVideoByVideoName(videoName);
+        MemberEntity memberEntity = memberService.findMemberByMemberName(memberName);
+        VideoEntity videoEntity = videoService.findVideoByVideoName(videoName);
         //영상이 있는지 없는지 데이터 베이스 조회
         if(videoEntity !=null) {
             //영상이 있을 시에 현 접속자와 영상 사이의 조회 관계 판단
-            VideoViewLikeEntity videoViewLikeEntity = videoViewLikeService.findByMemberNameAndVideoName(memberName, videoName);
+            VideoViewLikeEntity videoViewLikeEntity = videoViewLikeService.findByMemberIdAndVideoId(memberEntity.getId(), videoEntity.getId());
             if(videoViewLikeEntity !=null) { //조회관계가 있음
                 model.addAttribute("view",videoEntity.getView());
                 if(videoViewLikeEntity.isLike()) //-> 이미 좋아요를 누른 상태
@@ -171,8 +109,8 @@ public class VideoController {
                     model.addAttribute("recommendationMsg","추천");
             }else { //조회관계가 없음
                 VideoViewLikeEntity newVideoViewLikeEnity = new VideoViewLikeEntity();
-                newVideoViewLikeEnity.setMemberName(memberName);
-                newVideoViewLikeEnity.setVideoName(videoName);
+                newVideoViewLikeEnity.setMemberId(memberEntity.getId());
+                newVideoViewLikeEnity.setVideoId(videoEntity.getId());
                 newVideoViewLikeEnity.setLike(false);
                 videoViewLikeService.saveVideoViewLike(newVideoViewLikeEnity);
                 videoService.UpSingleVideoView(videoEntity);
@@ -207,23 +145,125 @@ public class VideoController {
 
     // 영상전송 수행
     @PostMapping("/admin/videoUpload")
-    public String videoUploadAction(HttpServletRequest request ,Model model) throws TesseractException, FrameGrabber.Exception {
+    public String videoUploadAction(HttpServletRequest request ,Model model) throws Exception {
         String localPath = request.getParameter("path");                    //로컬 경로(전송을 위해 필요한 경로)
         String HostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
         localPath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
 
-        //1. 영상의 이벤트 정보를 디비에 저장할 스트링 생성
-        String awayTime = "", homeTime = "", twoTime = "", threeTime = "", dunkTime = "", blockTime = "";
-        videoConverter.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata");
-        videoConverter.setVideoFilePath(localPath);
-        videoConverter.setFrameRate(30);
-        videoConverter.setImageDomain(10, 10, 300, 45);
-        ArrayList<Pair<Double,String>> convertVideoToString = videoConverter.ConvertVideoToString();
+        ArrayList<Pair<Double,String>> eventInfoList = DoTesseractOCR(localPath);
+        VideoEntity videoEntity = SaveEventInfo(eventInfoList);
+
+        String[] parsedStr = HostfileName.split("-");
+        String[] parsedStr2 = parsedStr[2].split("\\.");
+
+        videoEntity.setHomeTeam(parsedStr[1]);
+        videoEntity.setAwayTeam(parsedStr2[0]);
+        videoEntity.setName(HostfileName);
+        videoEntity.setLike(new Long(0));
+        videoEntity.setView(new Long(0));
+        videoEntity.setCreateTimeAt(LocalDateTime.now());
+        FTPUploader ftpUploader;
+        //2. 영상전송
+        try {
+            //디비 -> FTP
+            Long id = videoService.SaveSingleVideo(videoEntity);
+            if (id == -1) {
+                return "redirect:/admin/videoUpload?msg=overlap";
+            } else {
+                ftpUploader = new FTPUploader(ftpHostInfo.getHostIP(), ftpHostInfo.getPort(), ftpHostInfo.getID(), ftpHostInfo.getPW());
+                ftpUploader.uploadFile(localPath, HostfileName, "/ridersTest/");
+                ftpUploader.disconnect();
+            }
+        } catch (Exception e) {
+            videoService.DeleteSingleVideo(videoEntity);
+            return "redirect:/admin/videoUpload?msg=serverError";
+        }
+        return "redirect:/admin/videoUpload?msg=succes";
+    }
+
+
+
+
+
+
+
+
+    private int UpdateLikeRelation(MemberEntity memberEntity, VideoEntity videoEntity, String recommendMsg){
+        VideoViewLikeEntity videoViewLikeEntity = new VideoViewLikeEntity();
+        videoViewLikeEntity.setMemberId(memberEntity.getId());
+        videoViewLikeEntity.setVideoId(videoEntity.getId());
+
+        if(recommendMsg.equals("추천")){
+            videoService.UpSingleVideoLike(videoEntity);                                   //비디오 테이블 좋아요 수 1 증가
+            videoViewLikeService.updateSingleVideoLike(videoViewLikeEntity,true);   //VideoViewLike테이블 좋아요 표시
+        }
+        else{
+            videoService.DownSingleVideoLike(videoEntity);                                  //비디오 테이블 좋아요 수 1 감소
+            videoViewLikeService.updateSingleVideoLike(videoViewLikeEntity,false);    //VideoViewLike테이블 좋아요 제거
+        }
+        return 1;
+    }
+
+    private List<VideoEventEntity> GetVideoEventInfo(VideoEntity videoEntity, String eventName){
+        List<VideoEventEntity> videoEventEntities = new ArrayList<>();
+        if(eventName.equals("어웨이")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(2,videoEntity);
+        }
+        else if(eventName.equals("홈")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(1,videoEntity);
+        }
+        else if(eventName.equals("2점슛")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(4,videoEntity);
+        }
+        else if(eventName.equals("3점슛")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(3,videoEntity);
+        }
+        else if(eventName.equals("덩크")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(5,videoEntity);
+        }
+        else if(eventName.equals("블락")){
+            videoEventEntities = videoEventRepository.findByWhichEventAndVideoOrderByTimeDesc(6,videoEntity);
+        }
+        else
+            System.out.println("nothing");
+
+        return videoEventEntities;
+    }
+
+    private String MakeMarkStr(List<VideoEventEntity> videoEventEntities){
+        String markStr = "[";
+        if(videoEventEntities.size() != 0){
+            for(VideoEventEntity videoEvent : videoEventEntities){
+                String parsedEventTime = "{time: " + videoEvent.getTime() + "},";
+                markStr = markStr + parsedEventTime;
+            }
+        }else
+            markStr = markStr + "{}";
+
+        markStr = markStr + "]";
+        return markStr;
+    }
+
+    private String MakeVideoName(String useDate, String date, String leftTeam, String rightTeam){
+        String dateP1[] = date.split("\\s+");
+        String dateP2[] = dateP1[0].split("\\.");
+
+        String month = dateP2[0];
+        String day = dateP2[1];
+        if(month.length()==1)
+            month = "0"+month;
+        if(day.length()==1)
+            day = "0"+day;
+        useDate = useDate + month + day;
+        return useDate + "-" +leftTeam + "-" + rightTeam + ".mp4";
+    }
+
+    private VideoEntity SaveEventInfo(ArrayList<Pair<Double,String>> eventInfoList){
         VideoEntity videoEntity = new VideoEntity();
 
-        for(int i = 0 ; i < convertVideoToString.size();i++) {
-            double timeInfo = convertVideoToString.get(i).getKey();
-            String[] splitedStr = convertVideoToString.get(i).getValue().split("-");
+        for(int i = 0 ; i < eventInfoList.size();i++) {
+            double timeInfo = eventInfoList.get(i).getKey();
+            String[] splitedStr = eventInfoList.get(i).getValue().split("-");
             String teamInfo = splitedStr[0];
             String actionInfo = splitedStr[1];
             System.out.println(timeInfo + "/" + teamInfo + "/" + actionInfo);
@@ -268,32 +308,15 @@ public class VideoController {
             else
                 System.out.println("nothing");
         }
+        return videoEntity;
+    }
 
-        //2. 영상전송
-        String[] parsedStr = HostfileName.split("-");
-        String[] parsedStr2 = parsedStr[2].split("\\.");
+    private ArrayList<Pair<Double,String>> DoTesseractOCR(String localPath) throws Exception {
 
-        videoEntity.setHomeTeam(parsedStr[1]);
-        videoEntity.setAwayTeam(parsedStr2[0]);
-        videoEntity.setName(HostfileName);
-        videoEntity.setLike(new Long(0));
-        videoEntity.setView(new Long(0));
-        videoEntity.setCreateTimeAt(LocalDateTime.now());
-        FTPUploader ftpUploader;
-        try {
-            //디비 -> FTP
-            Long id = videoService.SaveSingleVideo(videoEntity);
-            if (id == -1) {
-                return "redirect:/admin/videoUpload?msg=overlap";
-            } else {
-                ftpUploader = new FTPUploader(ftpHostInfo.getHostIP(), ftpHostInfo.getPort(), ftpHostInfo.getID(), ftpHostInfo.getPW());
-                ftpUploader.uploadFile(localPath, HostfileName, "/ridersTest/");
-                ftpUploader.disconnect();
-            }
-        } catch (Exception e) {
-            videoService.DeleteSingleVideo(videoEntity);
-            return "redirect:/admin/videoUpload?msg=serverError";
-        }
-        return "redirect:/admin/videoUpload?msg=succes";
+
+        videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata_best\\tessdata");
+        videoTextDetector.setVideoFilePath(localPath);
+        videoTextDetector.setFrameRate(30);
+        return videoTextDetector.run();
     }
 }

@@ -9,11 +9,11 @@ import java.util.Optional;
 
 public interface VideoViewLikeRepository extends JpaRepository<VideoViewLikeEntity,Long> {
 
-    Optional<VideoViewLikeEntity> findByMemberNameAndVideoName(String memberName, String videoName);
+    Optional<VideoViewLikeEntity> findByMemberIdAndVideoId(Long memberId, Long videoId);
 
-    int deleteByMemberNameAndVideoName(String memberName,String videoName);
+    int deleteByMemberIdAndVideoId(Long memberId, Long videoId);
 
     @Modifying
-    @Query(value = "UPDATE VideoViewLikeEntity v set v.isLike = :isLike where v.memberName = :memberName and v.videoName = :videoName")
-    int updateSingleVideoLike(@Param("memberName")String memberName, @Param("videoName")String videoName, @Param("isLike") boolean isLike);
+    @Query(value = "UPDATE VideoViewLikeEntity v set v.isLike = :isLike where v.memberId = :memberId and v.videoId = :videoId")
+    int updateSingleVideoLike(@Param("memberId")Long memberId, @Param("videoId")Long videoId, @Param("isLike") boolean isLike);
 }

@@ -27,6 +27,17 @@ public class MemberService implements UserDetailsService {
     private MemberRepository memberRepository;
 
     @Transactional
+    public MemberEntity findMemberByMemberName(String memberName){
+        Optional<MemberEntity> memberEntitywrpper = memberRepository.findByEmail(memberName);
+        if(!memberEntitywrpper.isPresent()){
+            System.out.println("회원을 찾을수 없습니다!");
+            return null;
+        }
+        else
+            return memberEntitywrpper.get();
+    }
+
+    @Transactional
     public Long emailOverlapCheck(String email) {
         if(memberRepository.findByEmail(email).isPresent())
             return new Long(-1);

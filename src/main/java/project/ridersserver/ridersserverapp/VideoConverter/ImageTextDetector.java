@@ -1,4 +1,4 @@
-package me.soungho.demo;
+package project.ridersserver.ridersserverapp.VideoConverter;
 
 import javafx.util.Pair;
 import net.sourceforge.tess4j.Tesseract;
@@ -10,6 +10,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.photo.Photo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import project.ridersserver.ridersserverapp.VideoConverter.OCRValidator;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -25,14 +26,12 @@ import static org.opencv.imgproc.Imgproc.*;
 @Component
 public class ImageTextDetector {
 
-//    @Autowired
-//    NameConverter nameConverter;
 
     @Autowired
     OCRValidator ocrValidator;
 
-    //프레임 하나를 받아 자막 텍스트를 저장
-    public Rect DetectTextAndSave(BufferedImage img, double second ,int cnt){
+    //자막 후보영역을 받아 자막이 있다면 boxing과 자막 문자열 리턴
+    public Pair<Rect,String> DetectText(BufferedImage img,Tesseract tesseract){
         Mat src;
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
@@ -42,8 +41,6 @@ public class ImageTextDetector {
                 System.out.println("존재하지 않거나 지원하지 않는 소스!");
                 return null;
             }
-            else
-                System.out.println("<================시간: " + second + "================>");
 
             Mat erosion = ProcessCandidateArea(src); //영상 분석 기법 적용해 자막 후보군 추리기
 
@@ -54,34 +51,23 @@ public class ImageTextDetector {
                 for(int idx = 0;idx <contours.size();idx++){
                     Rect rect = Imgproc.boundingRect(contours.get(idx));
                     if(rect.width > rect.height && rect.area() > 3000) {
-                        //여기서 그리는 영역을 tesseract한테 먹여서 문자 리턴값을 확인하기
-                        rectangle(src, new Point(rect.br().x - rect.width, rect.br().y - rect.height)
-                                , rect.br()
-                                , new Scalar(0, 255, 0), 5);
-
-                        //그리는 영역을 잘라서 tesseract의 input으로 먹이자
-                        String ocrStr = PreProcessAndDoOCR(img.getSubimage(rect.x,rect.y,rect.width,rect.height));
+                        //rect => 최종 자막 후보군 위치
+                        String ocrStr = PreProcessAndDoOCR(img.getSubimage(rect.x,rect.y,rect.width,rect.height),tesseract);
                         Pair<String,String> ocrResult = ocrValidator.OCRValidate(ocrStr);
-
 
                         if(ocrResult!=null){
                             String succesStr = ocrResult.getKey() + "-" + ocrResult.getValue();
-                            System.out.println(succesStr);
-                            Imgcodecs.imwrite("TargetData\\result" + second + ".jpg", src);
-                            return rect;
+                            return new Pair<>(rect,succesStr);
                         }
                     }
                 }
             }
-            Imgcodecs.imwrite("TargetData\\result" + second + ".jpg", src);
             return null;
-
         }catch (Exception e) {
             System.out.println("Error:" + e.getMessage());
             return null;
         }
     }
-
 
     public Mat ProcessCandidateArea(Mat src){
         Mat src_gaussian = new Mat(src.rows(),src.cols(),src.type());
@@ -139,10 +125,7 @@ public class ImageTextDetector {
         return erosion;
     }
 
-    public String PreProcessAndDoOCR(BufferedImage subImage) throws Exception {
-        Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\(New)VideoSubtitleAndTesseractHardProj\\Project\\tessdata_best\\tessdata");
-        tesseract.setLanguage("eng");
+    public String PreProcessAndDoOCR(BufferedImage subImage,Tesseract tesseract) throws Exception {
 
         Mat subSrc = img2Mat(subImage);
         Mat src_deonsie = new Mat(subSrc.rows(),subSrc.cols(),subSrc.type());
@@ -197,6 +180,5 @@ public class ImageTextDetector {
         img.put(0, 0, pixels);
         return img;
     }
-
 
 }

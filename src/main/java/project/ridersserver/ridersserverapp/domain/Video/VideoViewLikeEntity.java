@@ -17,10 +17,10 @@ public class VideoViewLikeEntity {
     private Long id;
 
     @Column(length = 100,nullable = false)
-    private String memberName;
+    private Long memberId;
 
     @Column(length = 100, nullable = false)
-    private String videoName;
+    private Long videoId;
 
     @Column(nullable = false)
     private boolean isLike;
