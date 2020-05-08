@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import lombok.AllArgsConstructor;
 import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
 import project.ridersserver.ridersserverapp.domain.Video.VideoRepository;
+import project.ridersserver.ridersserverapp.domain.Video.VideoViewRepository;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;

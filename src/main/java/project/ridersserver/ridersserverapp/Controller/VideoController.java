@@ -15,13 +15,12 @@ import project.ridersserver.ridersserverapp.FTP.FTPUploader;
 import project.ridersserver.ridersserverapp.VideoConverter.Old.VideoConverter;
 import project.ridersserver.ridersserverapp.VideoConverter.VideoTextDetector;
 import project.ridersserver.ridersserverapp.domain.Member.MemberEntity;
-import project.ridersserver.ridersserverapp.domain.Video.VideoEntity;
-import project.ridersserver.ridersserverapp.domain.Video.VideoEventEntity;
-import project.ridersserver.ridersserverapp.domain.Video.VideoEventRepository;
-import project.ridersserver.ridersserverapp.domain.Video.VideoViewLikeEntity;
+import project.ridersserver.ridersserverapp.domain.Video.*;
+//import project.ridersserver.ridersserverapp.domain.Video.VideoViewLikeEntity;
 import project.ridersserver.ridersserverapp.service.MemberService;
-import project.ridersserver.ridersserverapp.service.VideoViewLikeService;
+//import project.ridersserver.ridersserverapp.service.VideoViewLikeService;
 import project.ridersserver.ridersserverapp.service.VideoService;
+import project.ridersserver.ridersserverapp.service.VideoViewService;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Member;
@@ -29,6 +28,7 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 @AllArgsConstructor
@@ -38,7 +38,7 @@ public class VideoController {
 
     private MemberService memberService;
 
-    private VideoViewLikeService videoViewLikeService;
+    private VideoViewService videoViewService;
 
     private FTPHostInfo ftpHostInfo;
 
@@ -100,19 +100,20 @@ public class VideoController {
         //영상이 있는지 없는지 데이터 베이스 조회
         if(videoEntity !=null) {
             //영상이 있을 시에 현 접속자와 영상 사이의 조회 관계 판단
-            VideoViewLikeEntity videoViewLikeEntity = videoViewLikeService.findByMemberIdAndVideoId(memberEntity.getId(), videoEntity.getId());
-            if(videoViewLikeEntity !=null) { //조회관계가 있음
+            VideoViewEntity videoViewEntity = videoViewService.findByMemberAndVideo(memberEntity, videoEntity);
+            if(videoViewEntity !=null) { //조회관계가 있음(좋아요 관계도 있다는 소리임)
                 model.addAttribute("view",videoEntity.getView());
-                if(videoViewLikeEntity.isLike()) //-> 이미 좋아요를 누른 상태
+                if(videoViewEntity.isLike()) //-> 이미 좋아요를 누른 상태
                     model.addAttribute("recommendationMsg","해지");
                 else  //좋아요를 누르지 않은 상태
                     model.addAttribute("recommendationMsg","추천");
-            }else { //조회관계가 없음
-                VideoViewLikeEntity newVideoViewLikeEnity = new VideoViewLikeEntity();
-                newVideoViewLikeEnity.setMemberId(memberEntity.getId());
-                newVideoViewLikeEnity.setVideoId(videoEntity.getId());
-                newVideoViewLikeEnity.setLike(false);
-                videoViewLikeService.saveVideoViewLike(newVideoViewLikeEnity);
+            }else { //조회관계가 없음(조회관계 + 좋아요 관계 만들어줘야함
+                VideoViewEntity newVideoViewEntity = new VideoViewEntity();
+                newVideoViewEntity.setMember(memberEntity);
+                newVideoViewEntity.setVideo(videoEntity);
+                newVideoViewEntity.setLike(false);
+                videoViewService.saveSingleVideoView(newVideoViewEntity);
+
                 videoService.UpSingleVideoView(videoEntity);
                 model.addAttribute("view",videoEntity.getView() + 1);
                 model.addAttribute("recommendationMsg","추천");
@@ -145,12 +146,12 @@ public class VideoController {
 
     // 영상전송 수행
     @PostMapping("/admin/videoUpload")
-    public String videoUploadAction(HttpServletRequest request ,Model model) throws Exception {
+    public String videoUploadAction(HttpServletRequest request ,Model model,Principal principal) throws Exception {
         String localPath = request.getParameter("path");                    //로컬 경로(전송을 위해 필요한 경로)
         String HostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
-        localPath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
+        String videoFilePath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
 
-        ArrayList<Pair<Double,String>> eventInfoList = DoTesseractOCR(localPath);
+        ArrayList<Pair<Double,String>> eventInfoList = DoTesseractOCR(videoFilePath);
         VideoEntity videoEntity = SaveEventInfo(eventInfoList);
 
         String[] parsedStr = HostfileName.split("-");
@@ -159,6 +160,7 @@ public class VideoController {
         videoEntity.setHomeTeam(parsedStr[1]);
         videoEntity.setAwayTeam(parsedStr2[0]);
         videoEntity.setName(HostfileName);
+        videoEntity.setUploaderName(principal.getName());
         videoEntity.setLike(new Long(0));
         videoEntity.setView(new Long(0));
         videoEntity.setCreateTimeAt(LocalDateTime.now());
@@ -187,19 +189,23 @@ public class VideoController {
 
 
 
-
+    //memberEntity와 videoEntity사이의 좋아요 관계 업데이트
     private int UpdateLikeRelation(MemberEntity memberEntity, VideoEntity videoEntity, String recommendMsg){
-        VideoViewLikeEntity videoViewLikeEntity = new VideoViewLikeEntity();
-        videoViewLikeEntity.setMemberId(memberEntity.getId());
-        videoViewLikeEntity.setVideoId(videoEntity.getId());
+//        VideoViewLikeEntity videoViewLikeEntity = new VideoViewLikeEntity();
+//        videoViewLikeEntity.setMemberId(memberEntity.getId());
+//        videoViewLikeEntity.setVideoId(videoEntity.getId());
+
+        VideoViewEntity videoViewEntity = new VideoViewEntity();
+        videoViewEntity.setMember(memberEntity);
+        videoViewEntity.setVideo(videoEntity);
 
         if(recommendMsg.equals("추천")){
             videoService.UpSingleVideoLike(videoEntity);                                   //비디오 테이블 좋아요 수 1 증가
-            videoViewLikeService.updateSingleVideoLike(videoViewLikeEntity,true);   //VideoViewLike테이블 좋아요 표시
+            videoViewService.updateSingleVideoLike(videoViewEntity,true);          //VideoView테이블 좋아요 표시
         }
         else{
             videoService.DownSingleVideoLike(videoEntity);                                  //비디오 테이블 좋아요 수 1 감소
-            videoViewLikeService.updateSingleVideoLike(videoViewLikeEntity,false);    //VideoViewLike테이블 좋아요 제거
+            videoViewService.updateSingleVideoLike(videoViewEntity,false);          //VideoView테이블 좋아요 제거
         }
         return 1;
     }
@@ -259,6 +265,7 @@ public class VideoController {
     }
 
     private VideoEntity SaveEventInfo(ArrayList<Pair<Double,String>> eventInfoList){
+        //추출된 이벤트 정보 리스트를 디비에 저장하기 전 videoEntity에 저장
         VideoEntity videoEntity = new VideoEntity();
 
         for(int i = 0 ; i < eventInfoList.size();i++) {

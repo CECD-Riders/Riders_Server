@@ -18,14 +18,14 @@ import java.util.Set;
 @Table(name = "video")
 public class VideoEntity {
 	@Id
-    @GeneratedValue(strategy= GenerationType.SEQUENCE , generator="VIDEO_SEQ_GENERATOR")
-    private Long id;
-	
+	@GeneratedValue(strategy= GenerationType.SEQUENCE , generator="VIDEO_SEQ_GENERATOR")
+	private Long id;
+
 	@Column(name = "videoname",length = 100, nullable = false , unique = true)
-    private String name;
-	
+	private String name;
+
 	@Column(name = "videolike",nullable = false)
-    private Long like;
+	private Long like;
 
 	@Column(name = "videoview", nullable = false)//조회수
 	private Long view;
@@ -33,6 +33,9 @@ public class VideoEntity {
 	@CreatedDate
 	@Column(updatable = false)
 	private LocalDateTime createTimeAt;
+
+	@Column(name = "uploaderName",length = 100, nullable = false)
+	private String uploaderName;
 
 	@Column(name = "hometeam",length = 100, nullable = false)
 	private String homeTeam;
@@ -44,21 +47,23 @@ public class VideoEntity {
 	//여기선 videoEntity => 나머지로 전파되도록 함
 	// 기본적으로 OneToMany는 lazy방식 + ManyToOne은 eger방식
 
-	@OneToMany(mappedBy = "video", cascade = CascadeType.PERSIST)
+	@OneToMany(mappedBy = "video", cascade = CascadeType.ALL)
 	private Set<VideoEventEntity> events = new HashSet<>();
+
+	@OneToMany(mappedBy = "video", cascade = CascadeType.ALL)
+	private Set<VideoViewEntity> viewMembers = new HashSet<>();
 
 	public void addEvent(VideoEventEntity event){
 		this.getEvents().add(event);
 		event.setVideo(this);
 	}
 
+	public void addViewMember(VideoViewEntity viewMember){
+		this.getViewMembers().add(viewMember);
+		viewMember.setVideo(this);
+	}
+
 
 
 
 }
-
-
-
-
-
-
