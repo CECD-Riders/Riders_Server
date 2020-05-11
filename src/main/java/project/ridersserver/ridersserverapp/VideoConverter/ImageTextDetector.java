@@ -26,7 +26,6 @@ import static org.opencv.imgproc.Imgproc.*;
 @Component
 public class ImageTextDetector {
 
-
     @Autowired
     OCRValidator ocrValidator;
 

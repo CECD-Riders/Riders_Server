@@ -27,8 +27,6 @@ import project.ridersserver.ridersserverapp.service.VideoService;
 //@AllArgsConstructor
 public class MyController {
 
-	private Logger logger = LoggerFactory.getLogger(MyController.class);
-
 	@Autowired
     private Crawler crawler;
 
@@ -55,8 +53,6 @@ public class MyController {
 			model.addAttribute("gameSize", 2);
 //			model.addAttribute("todayGame", dayGame);
 		}
-
-//		System.out.println(dayGame.getGameList().size());
 
 		//인기영상 4개, 최신영상 4개 (videoName받아서 넘기면 이걸로 url 메핑해서 보여줄 수 있다)
 		model.addAttribute("latestVideoName",videoService.GetLatestVideoName());

@@ -37,8 +37,9 @@ public class VideoTextDetector {
         BufferedImage frameImage, candidateArea;
         int k = 0;
         int x,y,w,h;
-        Integer uy = null,uh = null;    //올바른 문장이 나오는 위치를 피드벡 할때 update할 높이
+        Integer uy = null,uh = null;                            //올바른 문장이 나오는 위치를 피드벡 할때 update할 높이
         Rect updateRect = null; boolean isFitted = false;       //updateRect : 최적화 자막 영역이 나왔다면 그걸 담는것 //isFitted: 최적화 영역이 되었는지
+
 
         g.start();
         //초기 자막 후보 영역 설정
@@ -51,6 +52,7 @@ public class VideoTextDetector {
 
         boolean isGo = true;
         for (int i = 1 ; i < g.getLengthInFrames() ; i++) {
+            //1초 단위 프레임 처리
             if(i%frameRate == 0) {    //  i/30 => 1초
                 singleFrame = g.grabImage();
                 if(singleFrame == null) //프레임의 끝까지 다 읽으면 끝내야함
@@ -63,7 +65,8 @@ public class VideoTextDetector {
                     isFitted = true;
                 }
                 Pair<Rect,String> imageDectionInfo = imageTextDetector.DetectText(candidateArea,tesseract);
-                if(imageDectionInfo != null ) { //올바른 문장일 때
+
+                if(imageDectionInfo != null ) { //올바른 문장일이 있을 때
                     if(isGo == true){
                         if (isFitted == false) {
                             updateRect = imageDectionInfo.getKey();
@@ -112,3 +115,4 @@ public class VideoTextDetector {
         this.frameRate = frameRate;
     }
 }
+

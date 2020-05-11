@@ -148,22 +148,13 @@ public class VideoController {
     @PostMapping("/admin/videoUpload")
     public String videoUploadAction(HttpServletRequest request ,Model model,Principal principal) throws Exception {
         String localPath = request.getParameter("path");                    //로컬 경로(전송을 위해 필요한 경로)
-        String HostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
+        String hostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
         String videoFilePath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
 
         ArrayList<Pair<Double,String>> eventInfoList = DoTesseractOCR(videoFilePath);
         VideoEntity videoEntity = SaveEventInfo(eventInfoList);
+        videoEntity = SaveVideoExtraInfo(videoEntity,hostfileName,principal);
 
-        String[] parsedStr = HostfileName.split("-");
-        String[] parsedStr2 = parsedStr[2].split("\\.");
-
-        videoEntity.setHomeTeam(parsedStr[1]);
-        videoEntity.setAwayTeam(parsedStr2[0]);
-        videoEntity.setName(HostfileName);
-        videoEntity.setUploaderName(principal.getName());
-        videoEntity.setLike(new Long(0));
-        videoEntity.setView(new Long(0));
-        videoEntity.setCreateTimeAt(LocalDateTime.now());
         FTPUploader ftpUploader;
         //2. 영상전송
         try {
@@ -172,11 +163,13 @@ public class VideoController {
             if (id == -1) {
                 return "redirect:/admin/videoUpload?msg=overlap";
             } else {
+                System.out.println(videoFilePath);
                 ftpUploader = new FTPUploader(ftpHostInfo.getHostIP(), ftpHostInfo.getPort(), ftpHostInfo.getID(), ftpHostInfo.getPW());
-                ftpUploader.uploadFile(localPath, HostfileName, "/ridersTest/");
+                ftpUploader.uploadFile(videoFilePath, hostfileName, "/ridersTest/");
                 ftpUploader.disconnect();
             }
         } catch (Exception e) {
+            e.printStackTrace();
             videoService.DeleteSingleVideo(videoEntity);
             return "redirect:/admin/videoUpload?msg=serverError";
         }
@@ -191,10 +184,6 @@ public class VideoController {
 
     //memberEntity와 videoEntity사이의 좋아요 관계 업데이트
     private int UpdateLikeRelation(MemberEntity memberEntity, VideoEntity videoEntity, String recommendMsg){
-//        VideoViewLikeEntity videoViewLikeEntity = new VideoViewLikeEntity();
-//        videoViewLikeEntity.setMemberId(memberEntity.getId());
-//        videoViewLikeEntity.setVideoId(videoEntity.getId());
-
         VideoViewEntity videoViewEntity = new VideoViewEntity();
         videoViewEntity.setMember(memberEntity);
         videoViewEntity.setVideo(videoEntity);
@@ -318,11 +307,23 @@ public class VideoController {
         return videoEntity;
     }
 
-    private ArrayList<Pair<Double,String>> DoTesseractOCR(String localPath) throws Exception {
+    private VideoEntity SaveVideoExtraInfo(VideoEntity videoEntity, String hostfileName,Principal principal ){
+        String[] parsedStr = hostfileName.split("-");
+        String[] parsedStr2 = parsedStr[2].split("\\.");
 
+        videoEntity.setHomeTeam(parsedStr[1]);
+        videoEntity.setAwayTeam(parsedStr2[0]);
+        videoEntity.setName(hostfileName);
+        videoEntity.setUploaderName(principal.getName());
+        videoEntity.setLike(new Long(0));
+        videoEntity.setView(new Long(0));
+        videoEntity.setCreateTimeAt(LocalDateTime.now());
+        return videoEntity;
+    }
 
+    private ArrayList<Pair<Double,String>> DoTesseractOCR(String videoFilePath) throws Exception {
         videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata_best\\tessdata");
-        videoTextDetector.setVideoFilePath(localPath);
+        videoTextDetector.setVideoFilePath(videoFilePath);
         videoTextDetector.setFrameRate(30);
         return videoTextDetector.run();
     }

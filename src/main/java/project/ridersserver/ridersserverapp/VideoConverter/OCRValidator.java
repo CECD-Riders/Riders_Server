@@ -17,7 +17,6 @@ public class OCRValidator {
             return false;
     }
 
-
     //ocrStr을 검증해서 올바른 키워드면 키워드 리턴 / 아니면 null리턴
     public Pair<String,String> OCRValidate(String ocrStr){
 
