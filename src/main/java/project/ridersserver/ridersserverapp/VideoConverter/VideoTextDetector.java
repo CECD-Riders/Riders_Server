@@ -38,14 +38,16 @@ public class VideoTextDetector {
         int k = 0;
         int x,y,w,h;
         Integer uy = null,uh = null;                            //올바른 문장이 나오는 위치를 피드벡 할때 update할 높이
-        Rect updateRect = null; boolean isFitted = false;       //updateRect : 최적화 자막 영역이 나왔다면 그걸 담는것 //isFitted: 최적화 영역이 되었는지
+        Integer ux = null,uw = null;    //올바른 문장이 나오는 위치를 피드벡 할때 update할 너비
 
+        Rect updateRect = null;       //updateRect : 최적화 자막 영역이 나왔다면 그걸 담는것 //isFitted: 최적화 영역이 되었는지
+        boolean isFitted = false;
 
         g.start();
         //초기 자막 후보 영역 설정
         Frame singleFrame = g.grabImage();
         frameImage = java2DFrameConverter.convert(singleFrame);
-        x = 100;
+        x = 0;
         y = frameImage.getHeight()-250;
         w = frameImage.getWidth()-200;
         h = 200;
