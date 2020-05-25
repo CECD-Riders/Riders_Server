@@ -322,7 +322,8 @@ public class VideoController {
     }
 
     private ArrayList<Pair<Double,String>> DoTesseractOCR(String videoFilePath) throws Exception {
-        videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata_best\\tessdata");
+//        videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata_best\\tessdata");
+        videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\TrainedTessdata\\tessdata");
         videoTextDetector.setVideoFilePath(videoFilePath);
         videoTextDetector.setFrameRate(30);
         return videoTextDetector.run();

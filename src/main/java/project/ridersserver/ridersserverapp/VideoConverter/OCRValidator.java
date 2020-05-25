@@ -8,21 +8,39 @@ import org.springframework.stereotype.Component;
 @Component
 public class OCRValidator {
 
-    public boolean IsRightString(String ocrStr)
+//    public boolean IsRightString(String ocrStr)
+//    {
+//        int idx = ocrStr.indexOf('/');
+//        if(idx >=0)
+//            return true;
+//        else
+//            return false;
+//    }
+
+    public Pair<Boolean,Character> IsRightString(String ocrStr)
     {
-        int idx = ocrStr.indexOf('/');
+        int idx = ocrStr.indexOf('X');
         if(idx >=0)
-            return true;
-        else
-            return false;
+            return new Pair(true,'X');
+        else{
+            idx = ocrStr.indexOf('x');
+            if(idx>=0)
+                return new Pair(true,'x');
+            else
+                return new Pair(false,'x');
+        }
     }
 
     //ocrStr을 검증해서 올바른 키워드면 키워드 리턴 / 아니면 null리턴
     public Pair<String,String> OCRValidate(String ocrStr){
+//        if(!IsRightString(ocrStr))
+//            return null;
+//        String[] compontents = ocrStr.split("/");
 
-        if(!IsRightString(ocrStr))
+        Pair<Boolean,Character> rightStringinfo = IsRightString(ocrStr);
+        if(!rightStringinfo.getKey())  //키워드가 아닌 문자 걸러내기
             return null;
-        String[] compontents = ocrStr.split("/");
+        String[] compontents = ocrStr.split(rightStringinfo.getValue().toString());
         String ocrTeamStr = compontents[0];
         String ocrActionStr = compontents[1];
         int home = 0, away = 0;
@@ -68,7 +86,7 @@ public class OCRValidator {
         if(ocrActionStr.indexOf('o') >=0) block++;
         if(ocrActionStr.indexOf('k') >=0) block++;
 
-        if((home <3 && away < 3) || (two < 4 && three < 4 && block <3 && dunk < 3) ){
+        if((home <3 && away < 3) && (two < 4 && three < 4 && block <3 && dunk < 3) ){
             return null;
         }
 

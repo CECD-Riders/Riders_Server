@@ -30,7 +30,7 @@ public class ImageTextDetector {
     OCRValidator ocrValidator;
 
     //자막 후보영역을 받아 자막이 있다면 boxing과 자막 문자열 리턴
-    public Pair<Rect,String> DetectText(BufferedImage img,Tesseract tesseract){
+    public Pair<Rect,String> DetectText(BufferedImage img,Tesseract tesseract,double second){
         Mat src;
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
@@ -40,6 +40,8 @@ public class ImageTextDetector {
                 System.out.println("존재하지 않거나 지원하지 않는 소스!");
                 return null;
             }
+            else
+                System.out.println("<================시간: " + second + "================>");
 
             Mat erosion = ProcessCandidateArea(src); //영상 분석 기법 적용해 자막 후보군 추리기
 
@@ -50,12 +52,21 @@ public class ImageTextDetector {
                 for(int idx = 0;idx <contours.size();idx++){
                     Rect rect = Imgproc.boundingRect(contours.get(idx));
                     if(rect.width > rect.height && rect.area() > 3000) {
+
+                        rectangle(src, new Point(rect.br().x - rect.width, rect.br().y - rect.height)
+                                , rect.br()
+                                , new Scalar(0, 255, 0), 5);
+
                         //rect => 최종 자막 후보군 위치
                         String ocrStr = PreProcessAndDoOCR(img.getSubimage(rect.x,rect.y,rect.width,rect.height),tesseract);
+                        System.out.println(ocrStr);
                         Pair<String,String> ocrResult = ocrValidator.OCRValidate(ocrStr);
+                        Imgcodecs.imwrite("TargetData\\result" + second + ".jpg", src);
 
                         if(ocrResult!=null){
                             String succesStr = ocrResult.getKey() + "-" + ocrResult.getValue();
+                            Imgcodecs.imwrite("TargetData\\result" + second + ".jpg", src);
+                            System.out.println(succesStr);
                             return new Pair<>(rect,succesStr);
                         }
                     }
@@ -87,13 +98,13 @@ public class ImageTextDetector {
         Imgproc.Laplacian(src_gray,src_laplacian, CvType.CV_16S,3,1,0, Core.BORDER_DEFAULT);
 
         Imgproc.threshold(src_laplacian,binarization,80,255,THRESH_BINARY );
-        Imgproc.erode(binarization, erosion, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(3, 1)));
-        Imgproc.dilate(erosion, dilation, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(3, 1)));
+//        Imgproc.erode(binarization, erosion, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(3, 1)));
+//        Imgproc.dilate(erosion, dilation, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(3, 1)));
 
         /*<그래디언트>*/
-        Imgproc.Sobel(dilation,src_grad_x,CvType.CV_16S,1,0,3,3,0);
+        Imgproc.Sobel(binarization,src_grad_x,CvType.CV_16S,1,0,3,3,0);
         Core.convertScaleAbs(src_grad_x, abs_grad_x);
-        Imgproc.Sobel(dilation, src_grad_y, CvType.CV_16S, 0, 1,3,3,0);
+        Imgproc.Sobel(binarization, src_grad_y, CvType.CV_16S, 0, 1,3,3,0);
         Core.convertScaleAbs(src_grad_y, abs_grad_y);
 
         Core.addWeighted(src_grad_x, 0.5, src_grad_y, 0.5, 0, src_grad_total);
@@ -119,7 +130,7 @@ public class ImageTextDetector {
 
 
         /*<Morph Close>*/
-        Imgproc.dilate(abs_src_grad_total, dilation, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(65, 3)));
+        Imgproc.dilate(abs_src_grad_total, dilation, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(45, 1)));
         Imgproc.erode(dilation, erosion, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new  Size(5, 5)));
         return erosion;
     }

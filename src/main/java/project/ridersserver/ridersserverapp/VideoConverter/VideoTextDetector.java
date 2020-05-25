@@ -62,6 +62,15 @@ public class VideoTextDetector {
                 frameImage = java2DFrameConverter.convert(singleFrame);
                 candidateArea = frameImage.getSubimage(x,y,w,h);
 
+                if((double) i / frameRate == 15.0)
+                    System.out.println("break");
+
+                if((double) i / frameRate == 16.0)
+                    System.out.println("break");
+
+                if((double) i / frameRate == 17.0)
+                    System.out.println("break");
+
                 if(isFitted) {//피드벡을 통한 candidateArea최적화
                     if(ux + uw.intValue() >= w){
                         candidateArea = candidateArea.getSubimage(x, uy.intValue(), w, uh.intValue());
@@ -70,12 +79,12 @@ public class VideoTextDetector {
                         candidateArea = candidateArea.getSubimage(ux, uy.intValue(), uw.intValue(), uh.intValue());
                 }
 
-                Pair<Rect,String> imageDectionInfo = imageTextDetector.DetectText(candidateArea,tesseract);
+                Pair<Rect,String> imageDectionInfo = imageTextDetector.DetectText(candidateArea,tesseract,(double) i / frameRate);
 
                 if(imageDectionInfo != null ) { //올바른 문장이 있을 때
                     if(isGo == true){
+                        updateRect = imageDectionInfo.getKey();
                         if(isFitted == false){
-                            updateRect = imageDectionInfo.getKey();
                             uy = updateRect.y - 10;
                             uh = updateRect.height + 20;
                         }
