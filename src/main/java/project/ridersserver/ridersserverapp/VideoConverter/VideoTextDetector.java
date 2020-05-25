@@ -37,10 +37,10 @@ public class VideoTextDetector {
         BufferedImage frameImage, candidateArea;
         int k = 0;
         int x,y,w,h;
-        Integer uy = null,uh = null;                            //올바른 문장이 나오는 위치를 피드벡 할때 update할 높이
+        Integer uy = null,uh = null;    //올바른 문장이 나오는 위치를 피드벡 할때 update할 높이
         Integer ux = null,uw = null;    //올바른 문장이 나오는 위치를 피드벡 할때 update할 너비
 
-        Rect updateRect = null;       //updateRect : 최적화 자막 영역이 나왔다면 그걸 담는것 //isFitted: 최적화 영역이 되었는지
+        Rect updateRect = null;         //updateRect : 최적화 자막 영역이 나왔다면 그걸 담는것 //isFitted: 최적화 영역이 되었는지
         boolean isFitted = false;
 
         g.start();
@@ -49,7 +49,7 @@ public class VideoTextDetector {
         frameImage = java2DFrameConverter.convert(singleFrame);
         x = 0;
         y = frameImage.getHeight()-250;
-        w = frameImage.getWidth()-200;
+        w = frameImage.getWidth();
         h = 200;
 
         boolean isGo = true;
@@ -62,19 +62,33 @@ public class VideoTextDetector {
                 frameImage = java2DFrameConverter.convert(singleFrame);
                 candidateArea = frameImage.getSubimage(x,y,w,h);
 
-                if( uy != null && uh != null){  //피드벡을 통한 candidateArea최적화
-                    candidateArea = candidateArea.getSubimage(0,uy.intValue(),candidateArea.getWidth(),uh.intValue());
-                    isFitted = true;
+                if(isFitted) {//피드벡을 통한 candidateArea최적화
+                    if(ux + uw.intValue() >= w){
+                        candidateArea = candidateArea.getSubimage(x, uy.intValue(), w, uh.intValue());
+                    }
+                    else
+                        candidateArea = candidateArea.getSubimage(ux, uy.intValue(), uw.intValue(), uh.intValue());
                 }
+
                 Pair<Rect,String> imageDectionInfo = imageTextDetector.DetectText(candidateArea,tesseract);
 
-                if(imageDectionInfo != null ) { //올바른 문장일이 있을 때
+                if(imageDectionInfo != null ) { //올바른 문장이 있을 때
                     if(isGo == true){
-                        if (isFitted == false) {
+                        if(isFitted == false){
                             updateRect = imageDectionInfo.getKey();
                             uy = updateRect.y - 10;
                             uh = updateRect.height + 20;
                         }
+                        if(ux == null && uw == null){
+                            ux = updateRect.x - 60;
+                            uw = updateRect.width + 120;
+                        }
+                        else{
+                            ux = ux + updateRect.x - 60;
+                            uw = updateRect.width + 120;
+                        }
+                        isFitted = true;
+
                         String succesStr = imageDectionInfo.getValue();
                         double currentVideoTime = (double) i / frameRate;
                         ocrResultList.add(new Pair<>(currentVideoTime, succesStr));
