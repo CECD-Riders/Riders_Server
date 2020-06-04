@@ -77,8 +77,6 @@ public class VideoController {
         return MakeMarkStr(videoEventList);
     }
 
-
-
     //영상 시청
     @RequestMapping("/member/watch")
     public String watchVideo(HttpServletRequest request, Model model, Principal principal) {
@@ -151,7 +149,7 @@ public class VideoController {
         String hostfileName = request.getParameter("HostfileName");         //호스트 서버에 저장될 파일 이름(호스트 서버 밑 디비에 저장=> 이름규칙 필수적으로 따라야함)
         String videoFilePath = "C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\dataSample\\" + localPath;
 
-        ArrayList<Pair<Double,String>> eventInfoList = DoTesseractOCR(videoFilePath);
+        ArrayList<Pair<Double,String>> eventInfoList = DoTesseractOCR(videoFilePath,hostfileName.split("\\.")[0]);
         VideoEntity videoEntity = SaveEventInfo(eventInfoList);
         videoEntity = SaveVideoExtraInfo(videoEntity,hostfileName,principal);
 
@@ -321,11 +319,12 @@ public class VideoController {
         return videoEntity;
     }
 
-    private ArrayList<Pair<Double,String>> DoTesseractOCR(String videoFilePath) throws Exception {
+    private ArrayList<Pair<Double,String>> DoTesseractOCR(String videoFilePath ,String hostfileName) throws Exception {
 //        videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\tessdata_best\\tessdata");
         videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\TrainedTessdata\\tessdata");
+//        videoTextDetector.setTesseractPath("C:\\Users\\ksh\\OneDrive - dongguk.edu\\SoungHo\\2020Winter\\Comprehensive_Design\\RidersWebServer\\TrainedTessdata2\\tessdata");
         videoTextDetector.setVideoFilePath(videoFilePath);
         videoTextDetector.setFrameRate(30);
-        return videoTextDetector.run();
+        return videoTextDetector.run(hostfileName);
     }
 }

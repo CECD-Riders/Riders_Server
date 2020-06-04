@@ -26,7 +26,7 @@ public class VideoTextDetector {
 
     private double frameRate;
 
-    public ArrayList<Pair<Double,String>> run() throws Exception {
+    public ArrayList<Pair<Double,String>> run(String hostfileName) throws Exception {
         ArrayList<Pair<Double,String>> ocrResultList = new ArrayList<>();
         Tesseract tesseract = new Tesseract();
         tesseract.setDatapath(tesseractPath);
@@ -62,15 +62,6 @@ public class VideoTextDetector {
                 frameImage = java2DFrameConverter.convert(singleFrame);
                 candidateArea = frameImage.getSubimage(x,y,w,h);
 
-                if((double) i / frameRate == 15.0)
-                    System.out.println("break");
-
-                if((double) i / frameRate == 16.0)
-                    System.out.println("break");
-
-                if((double) i / frameRate == 17.0)
-                    System.out.println("break");
-
                 if(isFitted) {//피드벡을 통한 candidateArea최적화
                     if(ux + uw.intValue() >= w){
                         candidateArea = candidateArea.getSubimage(x, uy.intValue(), w, uh.intValue());
@@ -79,7 +70,7 @@ public class VideoTextDetector {
                         candidateArea = candidateArea.getSubimage(ux, uy.intValue(), uw.intValue(), uh.intValue());
                 }
 
-                Pair<Rect,String> imageDectionInfo = imageTextDetector.DetectText(candidateArea,tesseract,(double) i / frameRate);
+                Pair<Rect,String> imageDectionInfo = imageTextDetector.DetectText(candidateArea,tesseract,(double) i / frameRate,hostfileName);
 
                 if(imageDectionInfo != null ) { //올바른 문장이 있을 때
                     if(isGo == true){

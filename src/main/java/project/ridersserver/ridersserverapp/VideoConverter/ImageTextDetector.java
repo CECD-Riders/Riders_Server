@@ -30,7 +30,7 @@ public class ImageTextDetector {
     OCRValidator ocrValidator;
 
     //자막 후보영역을 받아 자막이 있다면 boxing과 자막 문자열 리턴
-    public Pair<Rect,String> DetectText(BufferedImage img,Tesseract tesseract,double second){
+    public Pair<Rect,String> DetectText(BufferedImage img,Tesseract tesseract,double second,String hostfileName){
         Mat src;
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
@@ -62,6 +62,8 @@ public class ImageTextDetector {
                         System.out.println(ocrStr);
                         Pair<String,String> ocrResult = ocrValidator.OCRValidate(ocrStr);
                         Imgcodecs.imwrite("TargetData\\result" + second + ".jpg", src);
+
+
 
                         if(ocrResult!=null){
                             String succesStr = ocrResult.getKey() + "-" + ocrResult.getValue();

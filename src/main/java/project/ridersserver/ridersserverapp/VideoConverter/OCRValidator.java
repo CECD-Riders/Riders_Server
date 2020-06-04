@@ -8,15 +8,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class OCRValidator {
 
-//    public boolean IsRightString(String ocrStr)
-//    {
-//        int idx = ocrStr.indexOf('/');
-//        if(idx >=0)
-//            return true;
-//        else
-//            return false;
-//    }
-
     public Pair<Boolean,Character> IsRightString(String ocrStr)
     {
         int idx = ocrStr.indexOf('X');
@@ -33,10 +24,6 @@ public class OCRValidator {
 
     //ocrStr을 검증해서 올바른 키워드면 키워드 리턴 / 아니면 null리턴
     public Pair<String,String> OCRValidate(String ocrStr){
-//        if(!IsRightString(ocrStr))
-//            return null;
-//        String[] compontents = ocrStr.split("/");
-
         Pair<Boolean,Character> rightStringinfo = IsRightString(ocrStr);
         if(!rightStringinfo.getKey())  //키워드가 아닌 문자 걸러내기
             return null;
